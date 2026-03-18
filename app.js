@@ -41,7 +41,7 @@ const bestStreakVal = document.getElementById('best-streak-val');
 const noteModal = document.getElementById('note-modal');
 const modalTitle = document.getElementById('modal-date-title');
 const noteTextarea = document.getElementById('note-textarea');
-const modalCloseBtn = document.getElementById('modal-close-btn');
+const modalCloseBtn = document.getElementById('modal-x-close');
 const modalSaveBtn = document.getElementById('modal-save-btn');
 let activeNoteDate = null;
 
@@ -49,7 +49,7 @@ let activeNoteDate = null;
 const autofillModal = document.getElementById('autofill-modal');
 const autofillHugeStat = document.getElementById('autofill-huge-stat');
 const autofillTargetState = document.getElementById('autofill-target-state');
-const autofillCancelBtn = document.getElementById('autofill-cancel-btn');
+const autofillCancelBtn = document.getElementById('autofill-x-close');
 const autofillConfirmBtn = document.getElementById('autofill-confirm-btn');
 
 // Pending Auto-Fill State
@@ -209,6 +209,33 @@ const init = () => {
 
     // Draw initial sparkline
     setTimeout(drawSparkline, 100);
+
+    // Minimalist Onboarding
+    const onboardingOverlay = document.getElementById('onboarding-overlay');
+    const startBtn = document.getElementById('onboarding-start-btn');
+    if (Object.keys(casesData).length === 0 && !localStorage.getItem('cal_onboarded_v1')) {
+        if (onboardingOverlay) {
+            onboardingOverlay.style.opacity = '1';
+            onboardingOverlay.style.pointerEvents = 'auto';
+        }
+    } else {
+        if (onboardingOverlay) {
+            onboardingOverlay.style.display = 'none';
+        }
+    }
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            if (onboardingOverlay) {
+                onboardingOverlay.style.opacity = '0';
+                onboardingOverlay.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    onboardingOverlay.style.display = 'none';
+                }, 1000);
+            }
+            localStorage.setItem('cal_onboarded_v1', 'true');
+        });
+    }
 };
 
 /**
@@ -541,7 +568,25 @@ const exportPoster = () => {
         pCtx.textAlign = 'left'; // reset
     });
 
-    // 5. Trigger download
+    // 6. Draw Footer Metadata
+    cursorY += 120;
+    pCtx.font = '500 24px Epilogue, sans-serif';
+    pCtx.fillStyle = dimColor;
+    pCtx.textAlign = 'center';
+    const stats = calculateStatsValues(); 
+    const bestStreakEl = document.getElementById('best-streak-val');
+    const bestStr = bestStreakEl ? bestStreakEl.textContent : '0';
+    const metaText = `TOTAL CLEAN: ${stats.successCount}  //  LONGEST STREAK: ${bestStr}  //  ISSUED: ${new Date().toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}).toUpperCase()}`;
+    pCtx.fillText(metaText, width / 2, cursorY);
+
+    // 7. Vignette / Archival Print Texture
+    const gradient = pCtx.createRadialGradient(width/2, height/2, height*0.4, width/2, height/2, height*0.8);
+    gradient.addColorStop(0, 'rgba(0,0,0,0)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0.5)');
+    pCtx.fillStyle = gradient;
+    pCtx.fillRect(0, 0, width, height);
+
+    // Trigger download
     pCanvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -597,6 +642,12 @@ const handleDayInteraction = (cell, isPointerDown = false) => {
         cell.classList.add('fail');
         if (isPointerDown) playSound('fail');
     }
+
+    // Apply animation
+    cell.classList.remove('animate-pop');
+    void cell.offsetWidth; // Reflow
+    cell.classList.add('animate-pop');
+    setTimeout(() => cell.classList.remove('animate-pop'), 500);
 
     // Do not call saveData() or tryAutoFill() repeatedly during a drag.
     // We defer those to the global pointerup event to save performance.
@@ -788,8 +839,26 @@ const openNoteModal = (e) => {
 };
 
 const closeNoteModal = () => {
-    noteModal.classList.remove('active');
+    if (noteModal) noteModal.classList.remove('active');
     activeNoteDate = null;
+    // Don't restore overflow if another overlay is active
+    const statsPanel = document.querySelector('.stats-panel');
+    const sidebar = document.getElementById('notes-sidebar');
+    if (!statsPanel.classList.contains('active') && !sidebar.classList.contains('active')) {
+        document.body.style.overflow = '';
+    }
+};
+
+const closeAllOverlays = () => {
+    const statsPanel = document.querySelector('.stats-panel');
+    if (statsPanel) statsPanel.classList.remove('active');
+    const sidebar = document.getElementById('notes-sidebar');
+    if (sidebar) sidebar.classList.remove('active');
+    if (noteModal) noteModal.classList.remove('active');
+    if (autofillModal) autofillModal.classList.remove('active');
+    document.body.style.overflow = '';
+    activeNoteDate = null;
+    pendingAutofill = null;
 };
 
 const saveNoteModal = () => {
@@ -910,19 +979,20 @@ const renderCalendar = () => {
                     }
                 }
                 if (state === 2) cell.classList.add('fail');
-                // Pointer Events for Batch Dragging
+                // Pointer Events for Batch Dragging (mouse/pen only)
                 cell.addEventListener('pointerdown', (e) => {
-                    // Prevent default touch actions (like scrolling) to allow drag
-                    if(e.pointerType === 'touch') { 
-                         // Handled via CSS usually (touch-action: none), but as fallback:
-                         cell.releasePointerCapture(e.pointerId); 
+                    // On touch devices, skip drag-painting to preserve scrolling
+                    if (e.pointerType === 'touch') {
+                        // Single tap marking only — no drag
+                        handleDayInteraction(cell, true);
+                        return;
                     }
                     isDragging = true;
                     handleDayInteraction(cell, true);
                 });
 
                 cell.addEventListener('pointerenter', (e) => {
-                    if (isDragging) {
+                    if (isDragging && e.pointerType !== 'touch') {
                         handleDayInteraction(cell, false);
                     }
                 });
@@ -1189,14 +1259,41 @@ const attachEventListeners = () => {
     if (autofillConfirmBtn) {
         autofillConfirmBtn.addEventListener('click', () => {
             if (pendingAutofill && pendingAutofill.gapDates) {
-                pendingAutofill.gapDates.forEach(d => {
-                    casesData[d] = pendingAutofill.newState;
-                });
-                saveData();
-                renderCalendar();
+                const dates = pendingAutofill.gapDates;
+                const state = pendingAutofill.newState;
+                let idx = 0;
+                
+                autofillModal.classList.remove('active');
+                
+                const fillInterval = setInterval(() => {
+                    if (idx >= dates.length) {
+                        clearInterval(fillInterval);
+                        pendingAutofill = null;
+                        saveData();
+                        renderCalendar(); // Refresh streaks
+                        return;
+                    }
+                    const d = dates[idx];
+                    casesData[d] = state;
+                    const cell = document.querySelector(`.day-cell[data-date="${d}"]`);
+                    if (cell) {
+                        cell.classList.remove('success', 'fail');
+                        if (state === 1) cell.classList.add('success');
+                        if (state === 2) cell.classList.add('fail');
+                        
+                        cell.classList.remove('animate-pop');
+                        void cell.offsetWidth;
+                        cell.classList.add('animate-pop');
+                        
+                        if (navigator.vibrate) navigator.vibrate(10);
+                        playSound(state === 1 ? 'success' : 'fail');
+                    }
+                    idx++;
+                }, 150);
+            } else {
+                autofillModal.classList.remove('active');
+                pendingAutofill = null;
             }
-            autofillModal.classList.remove('active');
-            pendingAutofill = null;
         });
     }
     if (exportPosterBtn) {
@@ -1230,42 +1327,34 @@ const attachEventListeners = () => {
     modalCloseBtn.addEventListener('click', closeNoteModal);
     modalSaveBtn.addEventListener('click', saveNoteModal);
     
-    // Mobile menu logic (Stats Panel)
+    // Universal X Close Listeners
+    const statsXClose = document.getElementById('stats-x-close');
+    const notesXClose = document.getElementById('notes-x-close');
+    const modalXClose = document.getElementById('modal-x-close');
+    const autofillXClose = document.getElementById('autofill-x-close');
+
+    if (statsXClose) statsXClose.addEventListener('click', closeAllOverlays);
+    if (notesXClose) notesXClose.addEventListener('click', closeAllOverlays);
+    if (modalXClose) modalXClose.addEventListener('click', closeNoteModal);
+    if (autofillXClose) {
+        autofillXClose.addEventListener('click', () => {
+            if (autofillModal) autofillModal.classList.remove('active');
+            pendingAutofill = null;
+        });
+    }
+
+    // Mobile menu logic (3-bar toggle - ONLY OPENS STATS)
     if (mobileToggle) {
         mobileToggle.addEventListener('click', () => {
-            const isActive = mobileToggle.classList.contains('active');
+            const isActive = statsPanel.classList.contains('active');
             if (isActive) {
-                mobileToggle.classList.remove('active');
-                statsPanel.classList.remove('active');
-                document.body.style.overflow = '';
+                closeAllOverlays();
             } else {
-                mobileToggle.classList.add('active');
+                closeAllOverlays(); // Safety
                 statsPanel.classList.add('active');
-                if (navigator.vibrate) navigator.vibrate(20); // Haptic
+                if (navigator.vibrate) navigator.vibrate(20);
                 document.body.style.overflow = 'hidden';
             }
-        });
-    }
-    
-    // Dedicated Mobile Close Buttons
-    const mobileStatsClose = document.getElementById('mobile-stats-close');
-    const mobileNotesClose = document.getElementById('mobile-notes-close');
-    
-    if (mobileStatsClose) {
-        mobileStatsClose.addEventListener('click', () => {
-            if (mobileToggle) mobileToggle.classList.remove('active');
-            statsPanel.classList.remove('active');
-            if (navigator.vibrate) navigator.vibrate(10);
-            document.body.style.overflow = '';
-        });
-    }
-    
-    if (mobileNotesClose) {
-        mobileNotesClose.addEventListener('click', () => {
-            const sidebar = document.getElementById('notes-sidebar');
-            if (sidebar) sidebar.classList.remove('active');
-            if (navigator.vibrate) navigator.vibrate(10);
-            document.body.style.overflow = '';
         });
     }
     
@@ -1275,18 +1364,16 @@ const attachEventListeners = () => {
         sidebarWriteBtn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(20);
             
-            // Close mobile sidebar if active
-            const sidebar = document.getElementById('notes-sidebar');
-            if (sidebar && sidebar.classList.contains('active')) {
-                sidebar.classList.remove('active');
-                document.body.style.overflow = '';
-            }
+            // Note: Keep the sidebar state or close it? The user wants "X" to close sidebars.
+            // Closing is usually cleaner when opening a modal.
+            closeAllOverlays();
             
             activeNoteDate = todayStr;
             const todayDate = new Date();
             modalTitle.textContent = MONTHS[todayDate.getMonth()] + ' ' + todayDate.getDate() + ', ' + todayDate.getFullYear();
             noteTextarea.value = notesData[todayStr] || '';
             noteModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
             setTimeout(() => noteTextarea.focus(), 100);
         });
     }
@@ -1299,7 +1386,6 @@ const attachEventListeners = () => {
             const currentText = noteTextarea.value;
             const prefix = (currentText && !currentText.endsWith(' ')) ? ' ' : '';
             
-            // Add as a tag (editorial feel)
             noteTextarea.value = currentText + prefix + '#' + value + ' ';
             noteTextarea.focus();
             
@@ -1335,9 +1421,7 @@ const attachEventListeners = () => {
             e.preventDefault();
             const sidebar = document.getElementById('notes-sidebar');
             if (sidebar) {
-                // Get computed style to handle default visible state
-                const currentDisplay = window.getComputedStyle(sidebar).display;
-                sidebar.style.display = currentDisplay === 'none' ? 'block' : 'none';
+                sidebar.classList.toggle('active');
             }
         });
     }
@@ -1355,6 +1439,7 @@ const attachEventListeners = () => {
             }, 100);
         });
     }
+
     // Bottom Navigation Bar actions
     const bnavToday = document.getElementById('bnav-today');
     const bnavStats = document.getElementById('bnav-stats');
@@ -1363,10 +1448,10 @@ const attachEventListeners = () => {
     
     if (bnavToday) {
         bnavToday.addEventListener('click', () => {
+            closeAllOverlays();
             const todayCell = document.querySelector('.day-cell.today');
             if (todayCell) {
                 todayCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Subtle pulse
                 todayCell.style.transition = 'box-shadow 0.3s, transform 0.3s';
                 todayCell.style.boxShadow = '0 0 0 4px var(--color-today)';
                 todayCell.style.transform = 'scale(1.3)';
@@ -1380,18 +1465,16 @@ const attachEventListeners = () => {
     
     if (bnavStats) {
         bnavStats.addEventListener('click', () => {
-            if (mobileToggle) {
-                mobileToggle.classList.add('active');
-                statsPanel.classList.add('active');
-                if (navigator.vibrate) navigator.vibrate(20);
-                document.body.style.overflow = 'hidden';
-            }
+            closeAllOverlays();
+            statsPanel.classList.add('active');
+            if (navigator.vibrate) navigator.vibrate(20);
+            document.body.style.overflow = 'hidden';
         });
     }
     
     if (bnavNote) {
         bnavNote.addEventListener('click', () => {
-            // Open Notes Overlay
+            closeAllOverlays();
             const sidebar = document.getElementById('notes-sidebar');
             if (sidebar) {
                 sidebar.classList.add('active');
@@ -1412,10 +1495,7 @@ const attachEventListeners = () => {
         if (isDragging) {
             isDragging = false;
             dragState = null;
-            // After a batch drag, finally save data and update UI
             saveData();
-            // Since we don't trigger auto-fill during a drag, you could theoretically
-            // try to auto fill from the last touched point, but batch dragging usually replaces the need for auto-fill.
         }
     });
     

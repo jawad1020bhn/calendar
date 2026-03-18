@@ -42,7 +42,7 @@
     <!-- Desktop Navigation Bar -->
     <nav class="desktop-nav" id="desktop-nav">
         <div class="desktop-nav-inner">
-            <span class="nav-brand">Record <em>// <span id="nav-year">2026</span></em></span>
+            <span class="nav-brand">THE DAILY TRACKER </span>
             <div class="nav-links">
                 <a href="#" class="nav-link" id="nav-jump-today">Today</a>
                 <a href="#" class="nav-link" id="nav-toggle-notes">Notes</a>
@@ -56,7 +56,7 @@
         <main class="page-container">
             <header class="masthead">
                 <div class="title-lockup">
-                    <span class="eyebrow">THE DAILY TRACKER</span>
+                    <span class="eyebrow"></span>
                     <h1 class="logo">
                         <span class="year-prefix">NO.</span><span id="current-year" class="year-main">2026</span>
                     </h1>
@@ -71,7 +71,7 @@
                 <div class="header-divider"></div>
 
                 <div class="stats-panel">
-                    <button class="mobile-close-btn" id="mobile-stats-close" aria-label="Close Stats">CLOSE</button>
+                    <button class="modal-x" id="stats-x-close" aria-label="Close Stats">&times;</button>
 
                     <div class="stat-block">
                         <span class="stat-label">Running<br>Streak</span>
@@ -142,7 +142,7 @@
 
         <!-- Desktop Notes Sidebar / Mobile Notes Overlay -->
         <aside class="notes-sidebar" id="notes-sidebar">
-            <button class="mobile-close-btn" id="mobile-notes-close" aria-label="Close Notes">CLOSE</button>
+            <button class="modal-x" id="notes-x-close" aria-label="Close Notes">&times;</button>
             <div class="sidebar-header">
                 <h2 class="sidebar-title">Notes</h2>
                 <span class="sidebar-sub">Notes from the record</span>
@@ -169,6 +169,7 @@
     <!-- Margin Note Modal -->
     <div class="modal-overlay" id="note-modal">
         <div class="margin-modal">
+            <button class="modal-x" id="modal-x-close" aria-label="Close Modal">&times;</button>
             <div class="modal-header" id="modal-date-title">March 17, 2026</div>
             <div class="modal-body">
                 <div class="note-suggestions" id="note-suggestions">
@@ -181,7 +182,6 @@
                 <textarea id="note-textarea" placeholder="What happened today? A single sentence is enough."></textarea>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn" id="modal-close-btn">Discard</button>
                 <button class="modal-btn primary" id="modal-save-btn">Inscribe</button>
             </div>
         </div>
@@ -190,6 +190,7 @@
     <!-- Auto-Fill Confirmation Modal (Minimalist/Brutalist) -->
     <div class="modal-overlay" id="autofill-modal">
         <div class="margin-modal autofill-modal-content">
+            <button class="modal-x" id="autofill-x-close" aria-label="Close Modal">&times;</button>
             <div class="modal-header">Sequence</div>
             <div class="modal-body autofill-minimal-body">
                 <div class="autofill-huge-stat" id="autofill-huge-stat">5</div>
@@ -197,7 +198,6 @@
                 <div class="autofill-target-state" id="autofill-target-state">Complete</div>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn" id="autofill-cancel-btn">Discard</button>
                 <button class="modal-btn primary" id="autofill-confirm-btn">Apply</button>
             </div>
         </div>
@@ -205,6 +205,15 @@
 
     <!-- Hidden Canvas used for high-res Poster rendering -->
     <canvas id="poster-canvas" style="display: none;"></canvas>
+
+    <!-- Minimalist Onboarding Overlay (First Entry) -->
+    <div class="modal-overlay" id="onboarding-overlay">
+        <div class="onboarding-content">
+            <h2 class="onboarding-title">NO MARKS YET.</h2>
+            <p class="onboarding-sub">Tap a day to log. Double-tap to inscribe.</p>
+            <button class="onboarding-start-btn" id="onboarding-start-btn">BEGIN</button>
+        </div>
+    </div>
 
     <!-- Bottom Navigation Bar (mobile only) -->
     <nav class="bottom-nav" id="bottom-nav">

@@ -230,6 +230,10 @@ body {
     overflow-y: auto;
 }
 
+.notes-sidebar.active {
+    display: block;
+}
+
 .sidebar-header {
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
@@ -357,28 +361,7 @@ body {
     transform: translate(-50%, -50%) scale(1);
 }
 
-.mobile-close-btn {
-    display: none;
-    /* Hide on desktop */
-    position: absolute;
-    top: 2rem;
-    right: 2rem;
-    background: none;
-    border: none;
-    font-family: var(--font-ui);
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--text-dim);
-    cursor: pointer;
-    z-index: 10;
-    padding: 0.5rem;
-}
-
-.mobile-close-btn:hover {
-    color: var(--text-ink);
-}
+/* Mobile Close button styles removed in favor of universal X buttons */
 
 /* ==========================================================================
    MASTHEAD & TYPOGRAPHY
@@ -461,47 +444,30 @@ body {
     transition: var(--transition);
 }
 
-/* 3 dots style initially */
+/* 3 bars style */
 .mobile-menu-toggle .line-1 {
-    width: 6px;
+    width: 24px;
     top: 12px;
     right: 8px;
 }
 
 .mobile-menu-toggle .line-2 {
-    width: 6px;
+    width: 18px;
     top: 19px;
     right: 8px;
 }
 
 .mobile-menu-toggle .line-3 {
-    width: 6px;
+    width: 24px;
     top: 26px;
     right: 8px;
 }
 
-/* Active State (transforms to X) */
-.mobile-menu-toggle.active .line-1 {
-    width: 24px;
-    top: 19px;
-    right: 8px;
-    transform: rotate(45deg);
-}
-
-.mobile-menu-toggle.active .line-2 {
-    width: 0;
-    opacity: 0;
-}
-
-.mobile-menu-toggle.active .line-3 {
-    width: 24px;
-    top: 19px;
-    right: 8px;
-    transform: rotate(-45deg);
-}
+/* Active State (transforms to X) REMOVED */
 
 /* Stats */
 .stats-panel {
+    position: relative;
     display: flex;
     gap: 3rem;
     margin-left: auto;
@@ -669,6 +635,41 @@ body {
     text-decoration-color: var(--color-fail);
 }
 
+/* Universal X Close Button (Corner Positioning) */
+.modal-x {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    font-size: 2.25rem;
+    line-height: 1;
+    color: var(--text-dim);
+    cursor: pointer;
+    z-index: 2200;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: var(--font-display);
+    border-radius: 50%;
+}
+
+.modal-x:hover, .modal-x:active {
+    color: var(--text-ink);
+    background: var(--border-subtle);
+    transform: rotate(90deg) scale(1.1);
+}
+
+@media (min-width: 901px) {
+    /* Hide X close buttons on desktop for stats ONLY */
+    .stats-panel .modal-x {
+        display: none;
+    }
+}
+
 /* ==========================================================================
    LEGEND
    ========================================================================== */
@@ -735,6 +736,7 @@ body {
     /* Clean masonry-like grid */
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 4rem 2rem;
+    cursor: crosshair;
 }
 
 .month-card {
@@ -816,10 +818,10 @@ body {
     font-size: 0.75rem;
     color: var(--text-ink);
     background: var(--color-neutral);
-    cursor: pointer;
+    cursor: crosshair;
     transition: var(--transition);
     position: relative;
-    touch-action: none; /* Critical for batch paint on touch devices */
+    touch-action: auto; /* Allow natural scrolling on touch; drag-paint is mouse-only */
 }
 
 /* Day states */
@@ -908,6 +910,17 @@ body {
     box-shadow: none;
 }
 
+/* Day Cell Mark Animation (Premium POP) */
+@keyframes mark-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.2); box-shadow: 0 0 24px var(--shadow-hover); }
+    100% { transform: scale(1); }
+}
+.day-cell.animate-pop {
+    animation: mark-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10;
+}
+
 /* ==========================================================================
    MILESTONE MARKERS (THE WINNING HORMONES)
    ========================================================================== */
@@ -985,6 +998,7 @@ body {
 }
 
 .margin-modal {
+    position: relative;
     background: var(--bg-paper);
     padding: 3rem;
     width: 90%;
@@ -1147,6 +1161,58 @@ body {
     /* Color injected by JS based on state */
 }
 
+/* Minimalist Onboarding Overlay */
+#onboarding-overlay {
+    background: var(--bg-paper);
+    z-index: 3000;
+}
+
+.onboarding-content {
+    text-align: center;
+    max-width: 460px;
+    padding: 2rem;
+}
+
+.onboarding-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text-ink);
+    margin-bottom: 0.5rem;
+    line-height: 1;
+}
+
+.onboarding-sub {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    margin-bottom: 3rem;
+    line-height: 1.6;
+}
+
+.onboarding-start-btn {
+    background: none;
+    border: 1px solid var(--border-strong);
+    color: var(--text-ink);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    padding: 1rem 2.5rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.onboarding-start-btn:hover {
+    background: var(--text-ink);
+    color: var(--bg-paper);
+    border-color: var(--text-ink);
+}
+
 /* ==========================================================================
    COLOPHON / FOOTER
    ========================================================================== */
@@ -1227,7 +1293,7 @@ body {
     }
 
 
-    /* Notes sidebar becomes a full-screen overlay on mobile instead of being completely hidden */
+    /* Notes sidebar becomes a full-screen overlay on mobile */
     .notes-sidebar {
         position: fixed;
         top: 0;
@@ -1235,7 +1301,7 @@ body {
         width: 100vw;
         height: 100vh;
         background: var(--bg-paper);
-        z-index: 1500;
+        z-index: 2100;
         border-left: none;
         padding: 4rem 2rem;
         margin: 0;
@@ -1245,6 +1311,13 @@ body {
         clip-path: circle(0% at calc(100% - 40px) 40px);
         transition: clip-path 0.7s cubic-bezier(0.77, 0, 0.175, 1);
         pointer-events: none;
+    }
+
+    .notes-sidebar .modal-x {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 2200;
     }
 
     .notes-sidebar.active {
@@ -1271,9 +1344,7 @@ body {
         display: flex;
     }
 
-    .mobile-close-btn {
-        display: block;
-    }
+    /* Mobile close buttons removed as per user request */
 
     .sidebar-fab {
         display: flex;
@@ -1287,18 +1358,28 @@ body {
         width: 100vw;
         height: 100vh;
         background: var(--bg-paper);
-        z-index: 1500;
+        z-index: 2100;
         flex-direction: column;
         justify-content: center;
         align-items: flex-start;
         padding: 4rem 2rem;
         margin: 0;
 
-        /* Dramatic entrance utilizing clip-path and backdrop */
+        /* Dramatic entrance utilizing clip-path */
         clip-path: circle(0% at calc(100% - 40px) 40px);
         transition: clip-path 0.7s cubic-bezier(0.77, 0, 0.175, 1);
         pointer-events: none;
         overflow-y: auto;
+    }
+
+    .stats-panel .modal-x,
+    .notes-sidebar .modal-x {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 2200;
+        background: var(--bg-paper);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
     .stats-panel.active {
@@ -1397,14 +1478,7 @@ body {
         align-content: center;
     }
     
-    .mobile-close-btn {
-        grid-column: 1 / -1;
-        position: relative;
-        top: 0;
-        right: 0;
-        align-self: flex-end;
-        margin-bottom: 2rem;
-    }
+    /* mobile close btn positioning removed */
 
     .stat-block {
         width: 100%;
