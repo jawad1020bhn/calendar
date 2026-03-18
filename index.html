@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Yearly Record</title>
+    <meta name="description"
+        content="A beautiful archival daily tracker. Color-code every day of the year, journal margin notes, and export stunning posters of your progress.">
+
+    <!-- Favicon (inline SVG) -->
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23181716'/%3E%3Ccircle cx='50' cy='50' r='28' fill='none' stroke='%23EAE6DF' stroke-width='4'/%3E%3C/svg%3E"
+        type="image/svg+xml">
+
+    <!-- Editorial Typography: Instrument Serif & Epilogue -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Epilogue:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
+        rel="stylesheet">
+
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#181716">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23181716'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%23EAE6DF' stroke-width='4'/%3E%3C/svg%3E">
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Window Controls Overlay Title Bar (Desktop PWA) -->
+    <div id="title-bar-overlay" class="title-bar-overlay">
+        <span class="title-bar-text">The Daily Tracker</span>
+    </div>
+
+    <div class="texture-overlay"></div>
+
+    <!-- Desktop Navigation Bar -->
+    <nav class="desktop-nav" id="desktop-nav">
+        <div class="desktop-nav-inner">
+            <span class="nav-brand">Record <em>// <span id="nav-year">2026</span></em></span>
+            <div class="nav-links">
+                <a href="#" class="nav-link" id="nav-jump-today">Today</a>
+                <a href="#" class="nav-link" id="nav-toggle-notes">Notes</a>
+                <button class="nav-link" id="nav-theme-toggle">Light Mode</button>
+                <button class="nav-link" id="nav-export-poster">Save Poster</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-layout">
+        <main class="page-container">
+            <header class="masthead">
+                <div class="title-lockup">
+                    <span class="eyebrow">THE DAILY TRACKER</span>
+                    <h1 class="logo">
+                        <span class="year-prefix">NO.</span><span id="current-year" class="year-main">2026</span>
+                    </h1>
+                </div>
+
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle Menu">
+                    <span class="line line-1"></span>
+                    <span class="line line-2"></span>
+                    <span class="line line-3"></span>
+                </button>
+
+                <div class="header-divider"></div>
+
+                <div class="stats-panel">
+                    <button class="mobile-close-btn" id="mobile-stats-close" aria-label="Close Stats">CLOSE</button>
+
+                    <div class="stat-block">
+                        <span class="stat-label">Running<br>Streak</span>
+                        <span class="stat-value" id="streak-val">0</span>
+                    </div>
+                    <div class="stat-block">
+                        <span class="stat-label">Longest<br>Streak</span>
+                        <span class="stat-value best-val" id="best-streak-val">0</span>
+                    </div>
+                    <div class="stat-block">
+                        <span class="stat-label">Days<br>Clean</span>
+                        <span class="stat-value success-val" id="success-val">0</span>
+                    </div>
+                    <div class="stat-block">
+                        <span class="stat-label">Days<br>Relapsed</span>
+                        <span class="stat-value fail-val" id="fail-val">0</span>
+                    </div>
+
+                    <div class="distribution-panel" id="distribution-panel">
+                        <span class="stat-label">TEMPORAL DISTRIBUTION</span>
+                        <div class="dist-grid" id="dist-grid">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <div class="actions-container">
+                        <div class="sparkline-wrapper" data-tooltip="Last 30 Days">
+                            <span class="sparkline-label">Momentum — 30 Day Window</span>
+                            <canvas id="sparkline-canvas" class="sparkline-canvas" width="280" height="60"></canvas>
+                        </div>
+
+                        <div class="actions">
+                            <button class="text-btn" id="undo-btn">Retract Last Mark</button>
+                            <button class="text-btn" id="share-btn">Share Progress</button>
+                            <button class="text-btn" id="export-btn">Archive to File</button>
+                            <label for="import-file" class="text-btn" id="import-btn">Restore from File</label>
+                            <input type="file" id="import-file" accept=".json" style="display: none;">
+                            <button class="text-btn text-danger" id="reset-btn">Erase All Marks</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="legend">
+                <div class="legend-row">
+                    <span class="dot neutral-dot"></span> <span class="legend-text">Unmarked</span>
+                </div>
+                <div class="legend-row">
+                    <span class="dot success-dot"></span> <span class="legend-text">Clean</span>
+                </div>
+                <div class="legend-row">
+                    <span class="dot fail-dot"></span> <span class="legend-text">Relapse</span>
+                </div>
+                <div class="legend-row">
+                    <span class="dot today-dot"></span> <span class="legend-text">Present Day</span>
+                </div>
+            </div>
+
+            <section class="calendar-layout" id="calendar-grid">
+                <!-- Calendar months will be injected here via JS -->
+            </section>
+
+            <footer class="colophon">
+                <p>All marks are yours alone. Nothing leaves this device. Tap a day to mark it — double-tap to leave a
+                    note in the margin.</p>
+            </footer>
+        </main>
+
+        <!-- Desktop Notes Sidebar / Mobile Notes Overlay -->
+        <aside class="notes-sidebar" id="notes-sidebar">
+            <button class="mobile-close-btn" id="mobile-notes-close" aria-label="Close Notes">CLOSE</button>
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Notes</h2>
+                <span class="sidebar-sub">Notes from the record</span>
+            </div>
+
+            <button class="sidebar-fab" id="sidebar-write-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                <span>Log Today</span>
+            </button>
+
+            <div class="sidebar-notes-list" id="sidebar-notes-list">
+                <!-- Populated by JS -->
+            </div>
+            <div class="sidebar-empty" id="sidebar-empty">
+                <p>No inscriptions yet.</p>
+                <p class="sidebar-hint">Double-click any day to leave a thought.</p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Margin Note Modal -->
+    <div class="modal-overlay" id="note-modal">
+        <div class="margin-modal">
+            <div class="modal-header" id="modal-date-title">March 17, 2026</div>
+            <div class="modal-body">
+                <div class="note-suggestions" id="note-suggestions">
+                    <button class="suggestion-pill" data-value="Stress">Stress</button>
+                    <button class="suggestion-pill" data-value="Boredom">Boredom</button>
+                    <button class="suggestion-pill" data-value="Social Media">Social Media</button>
+                    <button class="suggestion-pill" data-value="Insomnia">Insomnia</button>
+                    <button class="suggestion-pill" data-value="Hangover">Hangover</button>
+                </div>
+                <textarea id="note-textarea" placeholder="What happened today? A single sentence is enough."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" id="modal-close-btn">Discard</button>
+                <button class="modal-btn primary" id="modal-save-btn">Inscribe</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-Fill Confirmation Modal (Minimalist/Brutalist) -->
+    <div class="modal-overlay" id="autofill-modal">
+        <div class="margin-modal autofill-modal-content">
+            <div class="modal-header">Sequence</div>
+            <div class="modal-body autofill-minimal-body">
+                <div class="autofill-huge-stat" id="autofill-huge-stat">5</div>
+                <div class="autofill-stat-label">Days to fill</div>
+                <div class="autofill-target-state" id="autofill-target-state">Complete</div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" id="autofill-cancel-btn">Discard</button>
+                <button class="modal-btn primary" id="autofill-confirm-btn">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas used for high-res Poster rendering -->
+    <canvas id="poster-canvas" style="display: none;"></canvas>
+
+    <!-- Bottom Navigation Bar (mobile only) -->
+    <nav class="bottom-nav" id="bottom-nav">
+        <button class="bnav-item" id="bnav-today" aria-label="Jump to Today">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>Today</span>
+        </button>
+        <button class="bnav-item" id="bnav-stats" aria-label="Open Stats">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="12" width="4" height="9" />
+                <rect x="10" y="7" width="4" height="14" />
+                <rect x="17" y="3" width="4" height="18" />
+            </svg>
+            <span>Stats</span>
+        </button>
+        <button class="bnav-item" id="bnav-note" aria-label="Open All Notes">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"></path>
+            </svg>
+            <span>Notes</span>
+        </button>
+        <button class="bnav-item" id="bnav-top" aria-label="Scroll to Top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15" />
+            </svg>
+            <span>Top</span>
+        </button>
+    </nav>
+
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .catch(err => console.log('SW registration failed: ', err));
+            });
+        }
+    </script>
+</body>
+
+</html>
