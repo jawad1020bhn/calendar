@@ -25,7 +25,14 @@ const today = new Date();
 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
 // DOM Elements
-const themeToggleBtn = document.getElementById('theme-toggle-btn');
+const getUniqueElements = (...ids) => {
+    const seen = new Set();
+    return ids
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !seen.has(el) && seen.add(el));
+};
+
+const themeToggleButtons = getUniqueElements('theme-toggle-btn', 'nav-theme-toggle');
 const calendarGrid = document.getElementById('calendar-grid');
 const streakVal = document.getElementById('streak-val');
 const successVal = document.getElementById('success-val');
@@ -33,7 +40,7 @@ const failVal = document.getElementById('fail-val');
 const currentYearTitle = document.getElementById('current-year');
 const resetBtn = document.getElementById('reset-btn');
 const exportBtn = document.getElementById('export-btn');
-const exportPosterBtn = document.getElementById('export-poster-btn');
+const exportPosterButtons = getUniqueElements('export-poster-btn', 'nav-export-poster');
 const importFile = document.getElementById('import-file');
 const bestStreakVal = document.getElementById('best-streak-val');
 
@@ -130,12 +137,16 @@ const getFirstDayOfMonth = (monthIndex, year) => {
 /**
  * Theme Management
  */
+const updateThemeToggleLabels = (theme) => {
+    themeToggleButtons.forEach((button) => {
+        button.textContent = theme === 'light' ? 'Dark Mode' : 'Light Mode';
+    });
+};
+
 const loadTheme = () => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    if (themeToggleBtn) {
-        themeToggleBtn.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
-    }
+    updateThemeToggleLabels(savedTheme);
 };
 
 const toggleTheme = () => {
@@ -144,15 +155,9 @@ const toggleTheme = () => {
     
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-    
-    const darkLabel = 'Switch to Light';
-    const lightLabel = 'Switch to Dark';
-    const label = newTheme === 'light' ? lightLabel : darkLabel;
-    if (themeToggleBtn) themeToggleBtn.textContent = label;
-    
-    // Sync desktop nav theme button
-    const navTheme = document.getElementById('nav-theme-toggle');
-    if (navTheme) navTheme.textContent = newTheme === 'light' ? 'Dark Mode' : 'Light Mode';
+
+    updateThemeToggleLabels(newTheme);
+    drawSparkline();
 };
 
 /**
@@ -162,15 +167,6 @@ const init = () => {
     loadTheme();
     currentYearTitle.textContent = currentYear;
     document.title = 'The Daily Tracker // ' + currentYear;
-    
-    // Sync desktop nav year
-    const navYear = document.getElementById('nav-year');
-    if (navYear) navYear.textContent = currentYear;
-    
-    // Sync desktop nav theme label
-    const navTheme = document.getElementById('nav-theme-toggle');
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
-    if (navTheme) navTheme.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
     
     loadData();
     renderCalendar();
@@ -331,14 +327,32 @@ const shareProgress = async () => {
                 text: text,
                 url: window.location.origin
             });
+            return;
         } catch (err) {
             console.log('Share failed', err);
         }
-    } else {
-        // Fallback: Copy to clipboard
-        navigator.clipboard.writeText(text);
-        alert('Progress copied to clipboard!');
     }
+
+    if (navigator.clipboard?.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            alert('Progress copied to clipboard!');
+            return;
+        } catch (err) {
+            console.log('Clipboard copy failed', err);
+        }
+    }
+
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.setAttribute('readonly', 'true');
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    alert('Progress copied to clipboard!');
 };
 
 const calculateStatsValues = () => {
@@ -651,6 +665,10 @@ const handleDayInteraction = (cell, isPointerDown = false) => {
     cell.classList.add('animate-pop');
     setTimeout(() => cell.classList.remove('animate-pop'), 500);
 
+    if (isPointerDown && newState !== 0) {
+        tryAutoFill(dateStr, newState);
+    }
+
     // If it was a single click (not a drag), save immediately.
     // Otherwise, we wait for the global pointerup event to save performance.
     if (isPointerDown && !isDragging) {
@@ -768,7 +786,7 @@ const tryAutoFill = (changedDateStr, newState) => {
     autofillTargetState.textContent = stateLabel;
     
     // Style the state text to match its color
-    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-failed)';
+    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-fail)';
     
     // Store state globally for the event listener attached in attachEventListeners()
     pendingAutofill = {
@@ -1301,17 +1319,20 @@ const attachEventListeners = () => {
             }
         });
     }
-    if (exportPosterBtn) {
-        exportPosterBtn.addEventListener('click', () => {
-            exportPosterBtn.textContent = 'Generating...';
+    exportPosterButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const originalLabel = button.textContent;
+            button.textContent = 'Generating...';
             setTimeout(() => {
                 exportPoster();
-                exportPosterBtn.textContent = 'Print as Poster';
+                button.textContent = originalLabel;
             }, 100);
         });
-    }
+    });
     importFile.addEventListener('change', importData);
-    if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
+    themeToggleButtons.forEach((button) => {
+        button.addEventListener('click', toggleTheme);
+    });
     
     // Advanced PWA: Share Progress
     const shareBtn = document.getElementById('share-btn');
@@ -1401,9 +1422,6 @@ const attachEventListeners = () => {
     // Desktop Navigation Bar
     const navJumpToday = document.getElementById('nav-jump-today');
     const navToggleNotes = document.getElementById('nav-toggle-notes');
-    const navThemeToggle = document.getElementById('nav-theme-toggle');
-    const navExportPoster = document.getElementById('nav-export-poster');
-    
     if (navJumpToday) {
         navJumpToday.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1428,20 +1446,6 @@ const attachEventListeners = () => {
             if (sidebar) {
                 sidebar.classList.toggle('active');
             }
-        });
-    }
-    
-    if (navThemeToggle) {
-        navThemeToggle.addEventListener('click', toggleTheme);
-    }
-    
-    if (navExportPoster) {
-        navExportPoster.addEventListener('click', () => {
-            navExportPoster.textContent = 'Generating...';
-            setTimeout(() => {
-                exportPoster();
-                navExportPoster.textContent = 'Save Poster';
-            }, 100);
         });
     }
 
