@@ -19,13 +19,15 @@ let undoSnapshot = null;
 // Batch Drag State
 let isDragging = false;
 let dragState = null; // 0, 1, or 2
+let dragVisitedCount = 0;
+let lastChangedDate = null;
+let lastChangedState = null;
 
 // Determine today
 const today = new Date();
 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
 // DOM Elements
-const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const calendarGrid = document.getElementById('calendar-grid');
 const streakVal = document.getElementById('streak-val');
 const successVal = document.getElementById('success-val');
@@ -33,7 +35,6 @@ const failVal = document.getElementById('fail-val');
 const currentYearTitle = document.getElementById('current-year');
 const resetBtn = document.getElementById('reset-btn');
 const exportBtn = document.getElementById('export-btn');
-const exportPosterBtn = document.getElementById('export-poster-btn');
 const importFile = document.getElementById('import-file');
 const bestStreakVal = document.getElementById('best-streak-val');
 
@@ -130,12 +131,19 @@ const getFirstDayOfMonth = (monthIndex, year) => {
 /**
  * Theme Management
  */
+const getThemeToggleLabel = (theme) => theme === 'light' ? 'Dark Mode' : 'Light Mode';
+
+const syncThemeToggleLabels = (theme) => {
+    const navThemeToggle = document.getElementById('nav-theme-toggle');
+    if (navThemeToggle) {
+        navThemeToggle.textContent = getThemeToggleLabel(theme);
+    }
+};
+
 const loadTheme = () => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    if (themeToggleBtn) {
-        themeToggleBtn.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
-    }
+    syncThemeToggleLabels(savedTheme);
 };
 
 const toggleTheme = () => {
@@ -144,15 +152,7 @@ const toggleTheme = () => {
     
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-    
-    const darkLabel = 'Switch to Light';
-    const lightLabel = 'Switch to Dark';
-    const label = newTheme === 'light' ? lightLabel : darkLabel;
-    if (themeToggleBtn) themeToggleBtn.textContent = label;
-    
-    // Sync desktop nav theme button
-    const navTheme = document.getElementById('nav-theme-toggle');
-    if (navTheme) navTheme.textContent = newTheme === 'light' ? 'Dark Mode' : 'Light Mode';
+    syncThemeToggleLabels(newTheme);
 };
 
 /**
@@ -162,15 +162,6 @@ const init = () => {
     loadTheme();
     currentYearTitle.textContent = currentYear;
     document.title = 'The Daily Tracker // ' + currentYear;
-    
-    // Sync desktop nav year
-    const navYear = document.getElementById('nav-year');
-    if (navYear) navYear.textContent = currentYear;
-    
-    // Sync desktop nav theme label
-    const navTheme = document.getElementById('nav-theme-toggle');
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
-    if (navTheme) navTheme.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
     
     loadData();
     renderCalendar();
@@ -628,6 +619,9 @@ const handleDayInteraction = (cell, isPointerDown = false) => {
         if (currentState === newState) return; // Skip if already matches
     }
     
+    lastChangedDate = dateStr;
+    lastChangedState = newState;
+
     // Apply state
     if (newState === 0) {
         delete casesData[dateStr];
@@ -655,6 +649,9 @@ const handleDayInteraction = (cell, isPointerDown = false) => {
     // Otherwise, we wait for the global pointerup event to save performance.
     if (isPointerDown && !isDragging) {
         saveData();
+        if (newState === 1 || newState === 2) {
+            tryAutoFill(dateStr, newState);
+        }
     }
 };
 
@@ -768,7 +765,7 @@ const tryAutoFill = (changedDateStr, newState) => {
     autofillTargetState.textContent = stateLabel;
     
     // Style the state text to match its color
-    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-failed)';
+    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-fail)';
     
     // Store state globally for the event listener attached in attachEventListeners()
     pendingAutofill = {
@@ -993,11 +990,13 @@ const renderCalendar = () => {
                         return;
                     }
                     isDragging = true;
+                    dragVisitedCount = 1;
                     handleDayInteraction(cell, true);
                 });
 
                 cell.addEventListener('pointerenter', (e) => {
                     if (isDragging && e.pointerType !== 'touch') {
+                        dragVisitedCount++;
                         handleDayInteraction(cell, false);
                     }
                 });
@@ -1301,17 +1300,7 @@ const attachEventListeners = () => {
             }
         });
     }
-    if (exportPosterBtn) {
-        exportPosterBtn.addEventListener('click', () => {
-            exportPosterBtn.textContent = 'Generating...';
-            setTimeout(() => {
-                exportPoster();
-                exportPosterBtn.textContent = 'Print as Poster';
-            }, 100);
-        });
-    }
     importFile.addEventListener('change', importData);
-    if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
     
     // Advanced PWA: Share Progress
     const shareBtn = document.getElementById('share-btn');
@@ -1498,9 +1487,18 @@ const attachEventListeners = () => {
     // Global Pointer Up listener to finalize batch dragging
     document.addEventListener('pointerup', () => {
         if (isDragging) {
+            const shouldAutoFill = dragVisitedCount === 1 && (lastChangedState === 1 || lastChangedState === 2);
+            const changedDate = lastChangedDate;
+            const changedState = lastChangedState;
+
             isDragging = false;
             dragState = null;
+            dragVisitedCount = 0;
             saveData();
+
+            if (shouldAutoFill && changedDate) {
+                tryAutoFill(changedDate, changedState);
+            }
         }
     });
     
@@ -1508,6 +1506,7 @@ const attachEventListeners = () => {
     document.addEventListener('pointercancel', () => {
         isDragging = false;
         dragState = null;
+        dragVisitedCount = 0;
     });
 };
 
