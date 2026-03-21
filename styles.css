@@ -269,8 +269,7 @@ body {
     background: rgba(234, 230, 223, 0.02);
 }
 
-.sidebar-search,
-.control-select {
+.sidebar-search {
     width: 100%;
     background: transparent;
     color: var(--text-ink);
@@ -279,11 +278,6 @@ body {
     font-family: var(--font-ui);
     font-size: 0.8rem;
     outline: none;
-}
-
-.control-select {
-    border: 1px solid var(--border-subtle);
-    padding: 0.85rem 1rem;
 }
 
 .sidebar-search-shell {
@@ -307,8 +301,7 @@ body {
     font-style: italic;
 }
 
-.sidebar-filter-wrap,
-.control-group {
+.sidebar-filter-wrap {
     display: flex;
     flex-direction: column;
     gap: 0.45rem;
@@ -688,12 +681,6 @@ body {
     flex-direction: column;
     gap: 1.5rem;
     width: min(100%, 320px);
-}
-
-.export-controls {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
 }
 
 .sparkline-wrapper {
@@ -1556,10 +1543,6 @@ body {
 
     .sidebar-fab {
         display: flex;
-    }
-
-    .export-controls {
-        grid-template-columns: 1fr;
     }
 
     /* Next-Level Mobile Menu Overlay */

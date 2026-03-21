@@ -45,7 +45,6 @@ const exportBtn = document.getElementById('export-btn');
 const exportPosterButtons = getUniqueElements('export-poster-btn', 'nav-export-poster');
 const importFile = document.getElementById('import-file');
 const bestStreakVal = document.getElementById('best-streak-val');
-const posterFormatSelect = document.getElementById('poster-format');
 const notesSearchInput = document.getElementById('notes-search');
 const notesFilterButtons = Array.from(document.querySelectorAll('.sidebar-filter-chip'));
 const notesResults = document.getElementById('notes-results');
@@ -177,7 +176,6 @@ const init = () => {
     document.title = 'The Daily Tracker // ' + currentYear;
     
     loadData();
-    if (posterFormatSelect && !posterFormatSelect.value) posterFormatSelect.value = 'a4';
     renderCalendar();
     updateStats();
     renderSidebarNotes();
@@ -508,14 +506,11 @@ const exportPoster = () => {
     const pCanvas = document.getElementById('poster-canvas');
     if (!pCanvas) return;
 
-    const formatPresets = {
-        a4: { width: 2480, height: 3508, marginX: 200, rowHeight: 600, columnSpacing: 120 },
-        letter: { width: 2550, height: 3300, marginX: 190, rowHeight: 560, columnSpacing: 100 },
-        square: { width: 2800, height: 2800, marginX: 180, rowHeight: 450, columnSpacing: 80 }
-    };
-
-    const format = formatPresets[posterFormatSelect?.value] || formatPresets.a4;
-    const { width, height, marginX, rowHeight, columnSpacing } = format;
+    const width = 2480;
+    const height = 3508;
+    const marginX = 200;
+    const rowHeight = 600;
+    const columnSpacing = 120;
     pCanvas.width = width;
     pCanvas.height = height;
     
@@ -666,8 +661,7 @@ const exportPoster = () => {
     const stats = calculateStatsValues(); 
     const bestStreakEl = document.getElementById('best-streak-val');
     const bestStr = bestStreakEl ? bestStreakEl.textContent : '0';
-    const formatLabel = (posterFormatSelect?.selectedOptions?.[0]?.textContent || 'A4 Portrait').toUpperCase();
-    const metaText = `TOTAL CLEAN: ${stats.successCount}  //  LONGEST STREAK: ${bestStr}  //  ${formatLabel}`;
+    const metaText = `TOTAL CLEAN: ${stats.successCount}  //  LONGEST STREAK: ${bestStr}  //  ISSUED: ${new Date().toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}).toUpperCase()}`;
     pCtx.fillText(metaText, width / 2, cursorY);
 
     // 7. Vignette / Archival Print Texture
