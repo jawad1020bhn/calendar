@@ -103,6 +103,24 @@
                             <canvas id="sparkline-canvas" class="sparkline-canvas" width="280" height="60"></canvas>
                         </div>
 
+                        <div class="export-controls">
+                            <label class="control-group" for="poster-theme">
+                                <span class="sparkline-label">Poster Theme</span>
+                                <select id="poster-theme" class="control-select">
+                                    <option value="dark">Archival Dark</option>
+                                    <option value="light">Gallery Light</option>
+                                </select>
+                            </label>
+                            <label class="control-group" for="poster-format">
+                                <span class="sparkline-label">Poster Format</span>
+                                <select id="poster-format" class="control-select">
+                                    <option value="a4">A4 Portrait</option>
+                                    <option value="letter">US Letter</option>
+                                    <option value="square">Square</option>
+                                </select>
+                            </label>
+                        </div>
+
                         <div class="actions">
                             <button class="text-btn" id="undo-btn">Retract Last Mark</button>
                             <button class="text-btn" id="share-btn">Share Progress</button>
@@ -148,6 +166,20 @@
                 <span class="sidebar-sub">Notes from the record</span>
             </div>
 
+            <div class="sidebar-tools">
+                <input type="search" id="notes-search" class="sidebar-search" placeholder="Search notes or tags">
+                <label class="sidebar-filter-wrap" for="notes-filter">
+                    <span class="sidebar-filter-label">Filter</span>
+                    <select id="notes-filter" class="sidebar-filter">
+                        <option value="all">All notes</option>
+                        <option value="clean">Clean days</option>
+                        <option value="relapse">Relapse days</option>
+                        <option value="unmarked">Unmarked days</option>
+                    </select>
+                </label>
+                <div class="sidebar-results" id="notes-results">Showing all notes</div>
+            </div>
+
             <button class="sidebar-fab" id="sidebar-write-btn">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 20h9" />
@@ -180,6 +212,10 @@
                     <button class="suggestion-pill" data-value="Hangover">Hangover</button>
                 </div>
                 <textarea id="note-textarea" placeholder="What happened today? A single sentence is enough."></textarea>
+                <div class="note-meta">
+                    <span class="note-draft-state" id="note-draft-state">Saved note loaded</span>
+                    <span class="note-char-count" id="note-char-count">0 characters</span>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="modal-btn primary" id="modal-save-btn">Inscribe</button>
@@ -210,7 +246,11 @@
     <div class="modal-overlay" id="onboarding-overlay">
         <div class="onboarding-content">
             <h2 class="onboarding-title">NO MARKS YET.</h2>
-            <p class="onboarding-sub">Tap a day to log. Double-tap to inscribe.</p>
+            <div class="onboarding-sub onboarding-steps">
+                <p>Tap a day to cycle its mark.</p>
+                <p>Double-tap a day to inscribe a note.</p>
+                <p>Drag across days to mark a sequence.</p>
+            </div>
             <button class="onboarding-start-btn" id="onboarding-start-btn">BEGIN</button>
         </div>
     </div>
