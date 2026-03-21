@@ -7,12 +7,10 @@
 const LOCAL_STORAGE_KEY = 'cal_cases_data';
 const THEME_STORAGE_KEY = 'cal_theme_pref';
 const NOTES_STORAGE_KEY = 'cal_notes_data';
-const NOTE_DRAFTS_STORAGE_KEY = 'cal_note_drafts';
 
 // App State Cache
 let casesData = {};
 let notesData = {};
-let noteDrafts = {};
 let currentYear = new Date().getFullYear();
 
 // Undo System (single-level snapshot)
@@ -27,14 +25,7 @@ const today = new Date();
 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
 // DOM Elements
-const getUniqueElements = (...ids) => {
-    const seen = new Set();
-    return ids
-        .map((id) => document.getElementById(id))
-        .filter((el) => el && !seen.has(el) && seen.add(el));
-};
-
-const themeToggleButtons = getUniqueElements('theme-toggle-btn', 'nav-theme-toggle');
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const calendarGrid = document.getElementById('calendar-grid');
 const streakVal = document.getElementById('streak-val');
 const successVal = document.getElementById('success-val');
@@ -42,21 +33,14 @@ const failVal = document.getElementById('fail-val');
 const currentYearTitle = document.getElementById('current-year');
 const resetBtn = document.getElementById('reset-btn');
 const exportBtn = document.getElementById('export-btn');
-const exportPosterButtons = getUniqueElements('export-poster-btn', 'nav-export-poster');
+const exportPosterBtn = document.getElementById('export-poster-btn');
 const importFile = document.getElementById('import-file');
 const bestStreakVal = document.getElementById('best-streak-val');
-const posterThemeSelect = document.getElementById('poster-theme');
-const posterFormatSelect = document.getElementById('poster-format');
-const notesSearchInput = document.getElementById('notes-search');
-const notesFilterSelect = document.getElementById('notes-filter');
-const notesResults = document.getElementById('notes-results');
 
 // Modal Elements
 const noteModal = document.getElementById('note-modal');
 const modalTitle = document.getElementById('modal-date-title');
 const noteTextarea = document.getElementById('note-textarea');
-const noteDraftState = document.getElementById('note-draft-state');
-const noteCharCount = document.getElementById('note-char-count');
 const modalCloseBtn = document.getElementById('modal-x-close');
 const modalSaveBtn = document.getElementById('modal-save-btn');
 let activeNoteDate = null;
@@ -146,16 +130,12 @@ const getFirstDayOfMonth = (monthIndex, year) => {
 /**
  * Theme Management
  */
-const updateThemeToggleLabels = (theme) => {
-    themeToggleButtons.forEach((button) => {
-        button.textContent = theme === 'light' ? 'Dark Mode' : 'Light Mode';
-    });
-};
-
 const loadTheme = () => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeToggleLabels(savedTheme);
+    if (themeToggleBtn) {
+        themeToggleBtn.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
+    }
 };
 
 const toggleTheme = () => {
@@ -164,9 +144,15 @@ const toggleTheme = () => {
     
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-
-    updateThemeToggleLabels(newTheme);
-    drawSparkline();
+    
+    const darkLabel = 'Switch to Light';
+    const lightLabel = 'Switch to Dark';
+    const label = newTheme === 'light' ? lightLabel : darkLabel;
+    if (themeToggleBtn) themeToggleBtn.textContent = label;
+    
+    // Sync desktop nav theme button
+    const navTheme = document.getElementById('nav-theme-toggle');
+    if (navTheme) navTheme.textContent = newTheme === 'light' ? 'Dark Mode' : 'Light Mode';
 };
 
 /**
@@ -177,9 +163,16 @@ const init = () => {
     currentYearTitle.textContent = currentYear;
     document.title = 'The Daily Tracker // ' + currentYear;
     
+    // Sync desktop nav year
+    const navYear = document.getElementById('nav-year');
+    if (navYear) navYear.textContent = currentYear;
+    
+    // Sync desktop nav theme label
+    const navTheme = document.getElementById('nav-theme-toggle');
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+    if (navTheme) navTheme.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
+    
     loadData();
-    if (posterThemeSelect && !posterThemeSelect.value) posterThemeSelect.value = 'dark';
-    if (posterFormatSelect && !posterFormatSelect.value) posterFormatSelect.value = 'a4';
     renderCalendar();
     updateStats();
     renderSidebarNotes();
@@ -245,34 +238,6 @@ const init = () => {
     }
 };
 
-const updateNoteMeta = (text = '', mode = 'saved') => {
-    if (noteCharCount) {
-        noteCharCount.textContent = `${text.length} ${text.length === 1 ? 'character' : 'characters'}`;
-    }
-
-    if (!noteDraftState) return;
-
-    noteDraftState.classList.remove('is-draft', 'is-empty');
-
-    if (mode === 'draft') {
-        noteDraftState.textContent = 'Draft saved on device';
-        noteDraftState.classList.add('is-draft');
-    } else if (mode === 'empty') {
-        noteDraftState.textContent = 'No draft yet';
-        noteDraftState.classList.add('is-empty');
-    } else {
-        noteDraftState.textContent = text ? 'Saved note loaded' : 'Ready for a new note';
-    }
-};
-
-const getSelectedNoteText = (dateStr) => {
-    if (!dateStr) return '';
-    if (typeof noteDrafts[dateStr] === 'string') {
-        return noteDrafts[dateStr];
-    }
-    return notesData[dateStr] || '';
-};
-
 /**
  * Render Notes Sidebar (Desktop)
  */
@@ -282,36 +247,14 @@ const renderSidebarNotes = () => {
     if (!list || !empty) return;
     
     list.innerHTML = '';
-    const searchQuery = (notesSearchInput?.value || '').trim().toLowerCase();
-    const filterValue = notesFilterSelect?.value || 'all';
     
     // Collect all notes, sort by date descending (most recent first)
     const noteEntries = Object.entries(notesData)
         .filter(([_, val]) => val && val.trim())
-        .filter(([dateStr, val]) => {
-            const state = casesData[dateStr] || 0;
-            const matchesQuery = !searchQuery || val.toLowerCase().includes(searchQuery) || dateStr.includes(searchQuery);
-            const matchesState = filterValue === 'all'
-                || (filterValue === 'clean' && state === 1)
-                || (filterValue === 'relapse' && state === 2)
-                || (filterValue === 'unmarked' && state === 0);
-
-            return matchesQuery && matchesState;
-        })
         .sort((a, b) => b[0].localeCompare(a[0]));
-
-    if (notesResults) {
-        const queryLabel = searchQuery ? ` for “${searchQuery}”` : '';
-        notesResults.textContent = noteEntries.length
-            ? `Showing ${noteEntries.length} note${noteEntries.length === 1 ? '' : 's'}${queryLabel}`
-            : `No notes match${queryLabel}`;
-    }
     
     if (noteEntries.length === 0) {
         empty.style.display = 'block';
-        empty.innerHTML = searchQuery || filterValue !== 'all'
-            ? '<p>No notes match this search.</p><p class="sidebar-hint">Try a different keyword or filter.</p>'
-            : '<p>No inscriptions yet.</p><p class="sidebar-hint">Double-click any day to leave a thought.</p>';
         return;
     }
     
@@ -355,7 +298,6 @@ const renderSidebarNotes = () => {
 const loadData = () => {
     const savedCases = localStorage.getItem(LOCAL_STORAGE_KEY);
     const savedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
-    const savedDrafts = localStorage.getItem(NOTE_DRAFTS_STORAGE_KEY);
     
     if (savedCases) {
         try { casesData = JSON.parse(savedCases); } catch (e) { casesData = {}; }
@@ -364,16 +306,11 @@ const loadData = () => {
     if (savedNotes) {
         try { notesData = JSON.parse(savedNotes); } catch (e) { notesData = {}; }
     } else { notesData = {}; }
-
-    if (savedDrafts) {
-        try { noteDrafts = JSON.parse(savedDrafts); } catch (e) { noteDrafts = {}; }
-    } else { noteDrafts = {}; }
 };
 
 const saveData = () => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(casesData));
     localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
-    localStorage.setItem(NOTE_DRAFTS_STORAGE_KEY, JSON.stringify(noteDrafts));
     updateStats();
     drawSparkline();
     renderCalendar();
@@ -394,32 +331,14 @@ const shareProgress = async () => {
                 text: text,
                 url: window.location.origin
             });
-            return;
         } catch (err) {
             console.log('Share failed', err);
         }
+    } else {
+        // Fallback: Copy to clipboard
+        navigator.clipboard.writeText(text);
+        alert('Progress copied to clipboard!');
     }
-
-    if (navigator.clipboard?.writeText) {
-        try {
-            await navigator.clipboard.writeText(text);
-            alert('Progress copied to clipboard!');
-            return;
-        } catch (err) {
-            console.log('Clipboard copy failed', err);
-        }
-    }
-
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.setAttribute('readonly', 'true');
-    textArea.style.position = 'fixed';
-    textArea.style.opacity = '0';
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
-    alert('Progress copied to clipboard!');
 };
 
 const calculateStatsValues = () => {
@@ -504,46 +423,23 @@ const importData = (event) => {
 const exportPoster = () => {
     const pCanvas = document.getElementById('poster-canvas');
     if (!pCanvas) return;
-
-    const formatPresets = {
-        a4: { width: 2480, height: 3508, marginX: 200, rowHeight: 600, columnSpacing: 120 },
-        letter: { width: 2550, height: 3300, marginX: 190, rowHeight: 560, columnSpacing: 100 },
-        square: { width: 2800, height: 2800, marginX: 180, rowHeight: 450, columnSpacing: 80 }
-    };
-
-    const themePresets = {
-        dark: {
-            bgColor: '#181716',
-            textColor: '#EAE6DF',
-            dimColor: '#88837C',
-            subBorderColor: '#2F2E2C',
-            successColor: '#205E41',
-            failColor: '#D64235',
-            neutralColor: '#242220',
-            textureColor: 'rgba(255,255,255, 0.03)',
-            dayTextColor: '#EAE6DF'
-        },
-        light: {
-            bgColor: '#F5F2EB',
-            textColor: '#191817',
-            dimColor: '#7A756C',
-            subBorderColor: '#D8D4CC',
-            successColor: '#1E5033',
-            failColor: '#D13426',
-            neutralColor: '#E4E0D8',
-            textureColor: 'rgba(0,0,0, 0.035)',
-            dayTextColor: '#191817'
-        }
-    };
-
-    const format = formatPresets[posterFormatSelect?.value] || formatPresets.a4;
-    const theme = themePresets[posterThemeSelect?.value] || themePresets.dark;
-    const { width, height, marginX, rowHeight, columnSpacing } = format;
+    
+    // Set for high-res A4 paper proportions
+    const width = 2480; 
+    const height = 3508;
     pCanvas.width = width;
     pCanvas.height = height;
     
     const pCtx = pCanvas.getContext('2d');
-    const { bgColor, textColor, dimColor, subBorderColor, successColor, failColor, neutralColor, textureColor, dayTextColor } = theme;
+    
+    // Theming for poster (Archival dark theme by default for premium look)
+    const bgColor = '#181716';
+    const textColor = '#EAE6DF';
+    const dimColor = '#88837C';
+    const subBorderColor = '#2F2E2C';
+    const successColor = '#205E41';
+    const failColor = '#D64235';
+    const neutralColor = '#242220';
 
     // 1. Fill Background
     pCtx.fillStyle = bgColor;
@@ -557,7 +453,7 @@ const exportPoster = () => {
     for(let i=0; i<100; i++) {
         for(let j=0; j<100; j++) {
             if(Math.random() > 0.95) {
-                nCtx.fillStyle = textureColor;
+                nCtx.fillStyle = 'rgba(255,255,255, 0.03)';
                 nCtx.fillRect(i, j, 1, 1);
             }
         }
@@ -567,6 +463,7 @@ const exportPoster = () => {
     pCtx.fillRect(0, 0, width, height);
 
     // 3. Draw Header
+    const marginX = 200;
     let cursorY = 300;
     
     pCtx.font = '500 32px Epilogue, sans-serif';
@@ -596,15 +493,16 @@ const exportPoster = () => {
     cursorY += 200;
     
     const cols = 3;
-    const cw = (width - (marginX * 2) - (columnSpacing * (cols - 1))) / cols; // cell width per month
+    const colSpacing = 120;
+    const cw = (width - (marginX * 2) - (colSpacing * (cols - 1))) / cols; // cell width per month
     const cellRadius = cw / 14 - 8; // Based on 7 grid
     
     MONTHS.forEach((monthName, mIndex) => {
         const row = Math.floor(mIndex / cols);
         const col = mIndex % cols;
         
-        const mBaseX = marginX + (col * (cw + columnSpacing));
-        const mBaseY = cursorY + (row * rowHeight); // month card height
+        const mBaseX = marginX + (col * (cw + colSpacing));
+        const mBaseY = cursorY + (row * 600); // month card height
         
         // Month Header
         pCtx.font = 'italic 400 80px "Instrument Serif", serif';
@@ -659,7 +557,7 @@ const exportPoster = () => {
                 pCtx.fill();
                 
                 // Draw Day Number
-                pCtx.fillStyle = (state === 1 || state === 2) ? '#fff' : dayTextColor;
+                pCtx.fillStyle = (state === 1 || state === 2) ? '#fff' : textColor;
                 pCtx.fillText(dayNum, cellX, cellY + 8); // +8 for baseline
                 
                 // Note indicator
@@ -680,9 +578,7 @@ const exportPoster = () => {
     const stats = calculateStatsValues(); 
     const bestStreakEl = document.getElementById('best-streak-val');
     const bestStr = bestStreakEl ? bestStreakEl.textContent : '0';
-    const formatLabel = (posterFormatSelect?.selectedOptions?.[0]?.textContent || 'A4 Portrait').toUpperCase();
-    const themeLabel = (posterThemeSelect?.selectedOptions?.[0]?.textContent || 'Archival Dark').toUpperCase();
-    const metaText = `TOTAL CLEAN: ${stats.successCount}  //  LONGEST STREAK: ${bestStr}  //  ${formatLabel} // ${themeLabel}`;
+    const metaText = `TOTAL CLEAN: ${stats.successCount}  //  LONGEST STREAK: ${bestStr}  //  ISSUED: ${new Date().toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}).toUpperCase()}`;
     pCtx.fillText(metaText, width / 2, cursorY);
 
     // 7. Vignette / Archival Print Texture
@@ -754,10 +650,6 @@ const handleDayInteraction = (cell, isPointerDown = false) => {
     void cell.offsetWidth; // Reflow
     cell.classList.add('animate-pop');
     setTimeout(() => cell.classList.remove('animate-pop'), 500);
-
-    if (isPointerDown && newState !== 0) {
-        tryAutoFill(dateStr, newState);
-    }
 
     // If it was a single click (not a drag), save immediately.
     // Otherwise, we wait for the global pointerup event to save performance.
@@ -876,7 +768,7 @@ const tryAutoFill = (changedDateStr, newState) => {
     autofillTargetState.textContent = stateLabel;
     
     // Style the state text to match its color
-    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-fail)';
+    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-failed)';
     
     // Store state globally for the event listener attached in attachEventListeners()
     pendingAutofill = {
@@ -945,8 +837,7 @@ const openNoteModal = (e) => {
     dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
     
     modalTitle.textContent = `${MONTHS[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
-    noteTextarea.value = getSelectedNoteText(activeNoteDate);
-    updateNoteMeta(noteTextarea.value, noteDrafts[activeNoteDate] !== undefined ? 'draft' : (noteTextarea.value ? 'saved' : 'empty'));
+    noteTextarea.value = notesData[activeNoteDate] || '';
     
     noteModal.classList.add('active');
     setTimeout(() => noteTextarea.focus(), 100);
@@ -983,7 +874,6 @@ const saveNoteModal = () => {
     } else {
         delete notesData[activeNoteDate];
     }
-    delete noteDrafts[activeNoteDate];
     saveData();
     closeNoteModal();
     renderCalendar();
@@ -1356,7 +1246,6 @@ const attachEventListeners = () => {
         if(confirm("Are you sure you want to clear ALL tracked data for " + currentYear + "? This cannot be undone.")) {
             casesData = {};
             notesData = {};
-            noteDrafts = {};
             saveData();
             renderCalendar();
         }
@@ -1412,20 +1301,17 @@ const attachEventListeners = () => {
             }
         });
     }
-    exportPosterButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-            const originalLabel = button.textContent;
-            button.textContent = 'Generating...';
+    if (exportPosterBtn) {
+        exportPosterBtn.addEventListener('click', () => {
+            exportPosterBtn.textContent = 'Generating...';
             setTimeout(() => {
                 exportPoster();
-                button.textContent = originalLabel;
+                exportPosterBtn.textContent = 'Print as Poster';
             }, 100);
         });
-    });
+    }
     importFile.addEventListener('change', importData);
-    themeToggleButtons.forEach((button) => {
-        button.addEventListener('click', toggleTheme);
-    });
+    if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
     
     // Advanced PWA: Share Progress
     const shareBtn = document.getElementById('share-btn');
@@ -1490,8 +1376,7 @@ const attachEventListeners = () => {
             activeNoteDate = todayStr;
             const todayDate = new Date();
             modalTitle.textContent = MONTHS[todayDate.getMonth()] + ' ' + todayDate.getDate() + ', ' + todayDate.getFullYear();
-            noteTextarea.value = getSelectedNoteText(todayStr);
-            updateNoteMeta(noteTextarea.value, noteDrafts[todayStr] !== undefined ? 'draft' : (noteTextarea.value ? 'saved' : 'empty'));
+            noteTextarea.value = notesData[todayStr] || '';
             noteModal.classList.add('active');
             document.body.style.overflow = 'hidden';
             setTimeout(() => noteTextarea.focus(), 100);
@@ -1512,33 +1397,13 @@ const attachEventListeners = () => {
             if (navigator.vibrate) navigator.vibrate(10);
         });
     });
-
-    if (noteTextarea) {
-        noteTextarea.addEventListener('input', () => {
-            const value = noteTextarea.value;
-            if (activeNoteDate) {
-                if (value.trim()) {
-                    noteDrafts[activeNoteDate] = value;
-                } else {
-                    delete noteDrafts[activeNoteDate];
-                }
-                localStorage.setItem(NOTE_DRAFTS_STORAGE_KEY, JSON.stringify(noteDrafts));
-            }
-            updateNoteMeta(value, value.trim() ? 'draft' : 'empty');
-        });
-    }
-
-    if (notesSearchInput) {
-        notesSearchInput.addEventListener('input', renderSidebarNotes);
-    }
-
-    if (notesFilterSelect) {
-        notesFilterSelect.addEventListener('change', renderSidebarNotes);
-    }
     
     // Desktop Navigation Bar
     const navJumpToday = document.getElementById('nav-jump-today');
     const navToggleNotes = document.getElementById('nav-toggle-notes');
+    const navThemeToggle = document.getElementById('nav-theme-toggle');
+    const navExportPoster = document.getElementById('nav-export-poster');
+    
     if (navJumpToday) {
         navJumpToday.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1563,6 +1428,20 @@ const attachEventListeners = () => {
             if (sidebar) {
                 sidebar.classList.toggle('active');
             }
+        });
+    }
+    
+    if (navThemeToggle) {
+        navThemeToggle.addEventListener('click', toggleTheme);
+    }
+    
+    if (navExportPoster) {
+        navExportPoster.addEventListener('click', () => {
+            navExportPoster.textContent = 'Generating...';
+            setTimeout(() => {
+                exportPoster();
+                navExportPoster.textContent = 'Save Poster';
+            }, 100);
         });
     }
 
