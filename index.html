@@ -148,6 +148,21 @@
                 <span class="sidebar-sub">Notes from the record</span>
             </div>
 
+            <div class="sidebar-tools">
+                <label class="sidebar-search-wrap" for="sidebar-search">
+                    <span class="sidebar-search-label">Search the archive</span>
+                    <input type="search" id="sidebar-search" class="sidebar-search-input"
+                        placeholder="Search notes or #tags">
+                </label>
+                <div class="sidebar-filter-bar">
+                    <span class="sidebar-filter-status" id="sidebar-filter-status">All inscriptions</span>
+                    <button class="sidebar-clear-btn" id="sidebar-clear-filters" type="button">Clear</button>
+                </div>
+                <div class="sidebar-tag-rail" id="sidebar-tag-rail">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
             <button class="sidebar-fab" id="sidebar-write-btn">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 20h9" />
@@ -161,7 +176,7 @@
             </div>
             <div class="sidebar-empty" id="sidebar-empty">
                 <p>No inscriptions yet.</p>
-                <p class="sidebar-hint">Double-click any day to leave a thought.</p>
+                <p class="sidebar-hint">Double-tap or double-click any day to leave a thought.</p>
             </div>
         </aside>
     </div>
@@ -252,7 +267,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .catch(err => console.log('SW registration failed: ', err));
+                    .catch(() => {});
             });
         }
     </script>

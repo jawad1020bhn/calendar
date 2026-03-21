@@ -12,6 +12,8 @@ const NOTES_STORAGE_KEY = 'cal_notes_data';
 let casesData = {};
 let notesData = {};
 let currentYear = new Date().getFullYear();
+let notesSearchQuery = '';
+let activeNotesTag = 'all';
 
 // Undo System (single-level snapshot)
 let undoSnapshot = null;
@@ -19,13 +21,15 @@ let undoSnapshot = null;
 // Batch Drag State
 let isDragging = false;
 let dragState = null; // 0, 1, or 2
+let dragVisitedCount = 0;
+let lastChangedDate = null;
+let lastChangedState = null;
 
 // Determine today
 const today = new Date();
 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
 // DOM Elements
-const themeToggleBtn = document.getElementById('theme-toggle-btn');
 const calendarGrid = document.getElementById('calendar-grid');
 const streakVal = document.getElementById('streak-val');
 const successVal = document.getElementById('success-val');
@@ -33,7 +37,6 @@ const failVal = document.getElementById('fail-val');
 const currentYearTitle = document.getElementById('current-year');
 const resetBtn = document.getElementById('reset-btn');
 const exportBtn = document.getElementById('export-btn');
-const exportPosterBtn = document.getElementById('export-poster-btn');
 const importFile = document.getElementById('import-file');
 const bestStreakVal = document.getElementById('best-streak-val');
 
@@ -130,12 +133,19 @@ const getFirstDayOfMonth = (monthIndex, year) => {
 /**
  * Theme Management
  */
+const getThemeToggleLabel = (theme) => theme === 'light' ? 'Dark Mode' : 'Light Mode';
+
+const syncThemeToggleLabels = (theme) => {
+    const navThemeToggle = document.getElementById('nav-theme-toggle');
+    if (navThemeToggle) {
+        navThemeToggle.textContent = getThemeToggleLabel(theme);
+    }
+};
+
 const loadTheme = () => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    if (themeToggleBtn) {
-        themeToggleBtn.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
-    }
+    syncThemeToggleLabels(savedTheme);
 };
 
 const toggleTheme = () => {
@@ -144,15 +154,7 @@ const toggleTheme = () => {
     
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-    
-    const darkLabel = 'Switch to Light';
-    const lightLabel = 'Switch to Dark';
-    const label = newTheme === 'light' ? lightLabel : darkLabel;
-    if (themeToggleBtn) themeToggleBtn.textContent = label;
-    
-    // Sync desktop nav theme button
-    const navTheme = document.getElementById('nav-theme-toggle');
-    if (navTheme) navTheme.textContent = newTheme === 'light' ? 'Dark Mode' : 'Light Mode';
+    syncThemeToggleLabels(newTheme);
 };
 
 /**
@@ -162,15 +164,6 @@ const init = () => {
     loadTheme();
     currentYearTitle.textContent = currentYear;
     document.title = 'The Daily Tracker // ' + currentYear;
-    
-    // Sync desktop nav year
-    const navYear = document.getElementById('nav-year');
-    if (navYear) navYear.textContent = currentYear;
-    
-    // Sync desktop nav theme label
-    const navTheme = document.getElementById('nav-theme-toggle');
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
-    if (navTheme) navTheme.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
     
     loadData();
     renderCalendar();
@@ -202,8 +195,7 @@ const init = () => {
     // Advanced PWA: Window Controls Overlay support
     if ('windowControlsOverlay' in navigator) {
         navigator.windowControlsOverlay.addEventListener('geometrychange', (e) => {
-            // Force a slight layout refresh if needed
-            console.log('WCO Geometry Change', e.visible);
+            document.body.dataset.wcoVisible = e.visible ? 'true' : 'false';
         });
     }
 
@@ -241,43 +233,169 @@ const init = () => {
 /**
  * Render Notes Sidebar (Desktop)
  */
+const extractNoteTags = (text) => {
+    const matches = text.match(/#[A-Za-z0-9_-]+/g) || [];
+    const seen = new Set();
+
+    return matches.filter((tag) => {
+        const normalized = tag.toLowerCase();
+        if (seen.has(normalized)) return false;
+        seen.add(normalized);
+        return true;
+    });
+};
+
+const getSortedNoteEntries = () => {
+    return Object.entries(notesData)
+        .filter(([_, val]) => val && val.trim())
+        .sort((a, b) => b[0].localeCompare(a[0]));
+};
+
+const getFilteredNoteEntries = (noteEntries) => {
+    const query = notesSearchQuery.trim().toLowerCase();
+
+    return noteEntries.filter(([dateStr, text]) => {
+        const tags = extractNoteTags(text);
+        const formattedDate = formatDateLabel(dateStr).toLowerCase();
+        const matchesTag = activeNotesTag === 'all'
+            || tags.some((tag) => tag.toLowerCase() === activeNotesTag);
+        const matchesQuery = !query
+            || text.toLowerCase().includes(query)
+            || dateStr.includes(query)
+            || formattedDate.includes(query)
+            || tags.some((tag) => tag.toLowerCase().includes(query));
+
+        return matchesTag && matchesQuery;
+    });
+};
+
+const renderSidebarTagRail = (noteEntries) => {
+    const tagRail = document.getElementById('sidebar-tag-rail');
+    if (!tagRail) return;
+
+    tagRail.innerHTML = '';
+
+    const allChip = document.createElement('button');
+    allChip.type = 'button';
+    allChip.className = 'sidebar-tag-chip' + (activeNotesTag === 'all' ? ' active' : '');
+    allChip.textContent = 'All';
+    allChip.dataset.tag = 'all';
+    tagRail.appendChild(allChip);
+
+    const tagCounts = new Map();
+    noteEntries.forEach(([_, text]) => {
+        extractNoteTags(text).forEach((tag) => {
+            const normalized = tag.toLowerCase();
+            if (!tagCounts.has(normalized)) {
+                tagCounts.set(normalized, { label: tag, count: 0 });
+            }
+            tagCounts.get(normalized).count += 1;
+        });
+    });
+
+    [...tagCounts.entries()]
+        .sort((a, b) => b[1].count - a[1].count || a[1].label.localeCompare(b[1].label))
+        .slice(0, 12)
+        .forEach(([normalized, meta]) => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'sidebar-tag-chip' + (activeNotesTag === normalized ? ' active' : '');
+            chip.textContent = `${meta.label} · ${meta.count}`;
+            chip.dataset.tag = normalized;
+            tagRail.appendChild(chip);
+        });
+};
+
 const renderSidebarNotes = () => {
     const list = document.getElementById('sidebar-notes-list');
     const empty = document.getElementById('sidebar-empty');
+    const searchInput = document.getElementById('sidebar-search');
+    const status = document.getElementById('sidebar-filter-status');
+    const clearBtn = document.getElementById('sidebar-clear-filters');
     if (!list || !empty) return;
     
     list.innerHTML = '';
+
+    if (searchInput && searchInput.value !== notesSearchQuery) {
+        searchInput.value = notesSearchQuery;
+    }
     
-    // Collect all notes, sort by date descending (most recent first)
-    const noteEntries = Object.entries(notesData)
-        .filter(([_, val]) => val && val.trim())
-        .sort((a, b) => b[0].localeCompare(a[0]));
+    const noteEntries = getSortedNoteEntries();
+    const filteredEntries = getFilteredNoteEntries(noteEntries);
+    const hasActiveFilter = notesSearchQuery.trim() || activeNotesTag !== 'all';
+
+    renderSidebarTagRail(noteEntries);
+
+    if (status) {
+        if (noteEntries.length === 0) {
+            status.textContent = 'All inscriptions';
+        } else if (hasActiveFilter) {
+            status.textContent = `Showing ${filteredEntries.length} of ${noteEntries.length}`;
+        } else {
+            status.textContent = `${noteEntries.length} inscription${noteEntries.length === 1 ? '' : 's'}`;
+        }
+    }
+
+    if (clearBtn) {
+        clearBtn.style.visibility = hasActiveFilter ? 'visible' : 'hidden';
+    }
     
     if (noteEntries.length === 0) {
+        empty.innerHTML = `
+            <p>No inscriptions yet.</p>
+            <p class="sidebar-hint">Double-tap or double-click any day to leave a thought.</p>
+        `;
+        empty.style.display = 'block';
+        return;
+    }
+
+    if (filteredEntries.length === 0) {
+        empty.innerHTML = `
+            <p>No notes match this filter.</p>
+            <p class="sidebar-hint">Try another phrase or clear the active tag.</p>
+        `;
         empty.style.display = 'block';
         return;
     }
     
     empty.style.display = 'none';
     
-    noteEntries.forEach(([dateStr, text]) => {
+    filteredEntries.forEach(([dateStr, text]) => {
         const card = document.createElement('div');
         card.className = 'sidebar-note-card';
-        
-        const dateParts = dateStr.split('-');
-        const monthName = MONTHS[parseInt(dateParts[1]) - 1];
-        const dayNum = parseInt(dateParts[2]);
-        
+
         const dateEl = document.createElement('div');
         dateEl.className = 'sidebar-note-date';
-        dateEl.textContent = monthName + ' ' + dayNum;
+        dateEl.textContent = formatDateLabel(dateStr);
         
         const textEl = document.createElement('div');
         textEl.className = 'sidebar-note-text';
         textEl.textContent = text;
         
+        const tags = extractNoteTags(text);
+
         card.appendChild(dateEl);
         card.appendChild(textEl);
+
+        if (tags.length > 0) {
+            const tagList = document.createElement('div');
+            tagList.className = 'sidebar-note-tags';
+
+            tags.forEach((tag) => {
+                const tagEl = document.createElement('button');
+                tagEl.className = 'sidebar-note-tag';
+                tagEl.textContent = tag;
+                tagEl.type = 'button';
+                tagEl.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    activeNotesTag = tag.toLowerCase();
+                    renderSidebarNotes();
+                });
+                tagList.appendChild(tagEl);
+            });
+
+            card.appendChild(tagList);
+        }
         
         // Click to scroll to that day and open edit
         card.addEventListener('click', () => {
@@ -332,13 +450,21 @@ const shareProgress = async () => {
                 url: window.location.origin
             });
         } catch (err) {
-            console.log('Share failed', err);
+            if (err && err.name === 'AbortError') return;
         }
-    } else {
-        // Fallback: Copy to clipboard
-        navigator.clipboard.writeText(text);
-        alert('Progress copied to clipboard!');
     }
+
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            alert('Progress copied to clipboard!');
+            return;
+        }
+    } catch (err) {
+        // Fall back to a manual copy prompt below.
+    }
+
+    window.prompt('Copy your progress update:', text);
 };
 
 const calculateStatsValues = () => {
@@ -628,6 +754,9 @@ const handleDayInteraction = (cell, isPointerDown = false) => {
         if (currentState === newState) return; // Skip if already matches
     }
     
+    lastChangedDate = dateStr;
+    lastChangedState = newState;
+
     // Apply state
     if (newState === 0) {
         delete casesData[dateStr];
@@ -655,6 +784,9 @@ const handleDayInteraction = (cell, isPointerDown = false) => {
     // Otherwise, we wait for the global pointerup event to save performance.
     if (isPointerDown && !isDragging) {
         saveData();
+        if (newState === 1 || newState === 2) {
+            tryAutoFill(dateStr, newState);
+        }
     }
 };
 
@@ -768,7 +900,7 @@ const tryAutoFill = (changedDateStr, newState) => {
     autofillTargetState.textContent = stateLabel;
     
     // Style the state text to match its color
-    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-failed)';
+    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-fail)';
     
     // Store state globally for the event listener attached in attachEventListeners()
     pendingAutofill = {
@@ -792,6 +924,12 @@ const parseDateStr = (str) => {
 // Helper: format Date to YYYY-MM-DD
 const formatDateStr = (d) => {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+};
+
+const formatDateLabel = (dateStr) => {
+    const dateObj = parseDateStr(dateStr);
+    if (!dateObj) return dateStr;
+    return `${MONTHS[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
 };
 
 // Helper: collect all dates strictly between startDate and endDate (exclusive)
@@ -993,11 +1131,13 @@ const renderCalendar = () => {
                         return;
                     }
                     isDragging = true;
+                    dragVisitedCount = 1;
                     handleDayInteraction(cell, true);
                 });
 
                 cell.addEventListener('pointerenter', (e) => {
                     if (isDragging && e.pointerType !== 'touch') {
+                        dragVisitedCount++;
                         handleDayInteraction(cell, false);
                     }
                 });
@@ -1301,17 +1441,7 @@ const attachEventListeners = () => {
             }
         });
     }
-    if (exportPosterBtn) {
-        exportPosterBtn.addEventListener('click', () => {
-            exportPosterBtn.textContent = 'Generating...';
-            setTimeout(() => {
-                exportPoster();
-                exportPosterBtn.textContent = 'Print as Poster';
-            }, 100);
-        });
-    }
     importFile.addEventListener('change', importData);
-    if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
     
     // Advanced PWA: Share Progress
     const shareBtn = document.getElementById('share-btn');
@@ -1326,6 +1456,11 @@ const attachEventListeners = () => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
             e.preventDefault();
             undoLastAction();
+            return;
+        }
+
+        if (e.key === 'Escape') {
+            closeAllOverlays();
         }
     });
     
@@ -1365,6 +1500,36 @@ const attachEventListeners = () => {
     
     // Mobile "Log Today" inside Notes overlay
     const sidebarWriteBtn = document.getElementById('sidebar-write-btn');
+    const sidebarSearch = document.getElementById('sidebar-search');
+    const sidebarTagRail = document.getElementById('sidebar-tag-rail');
+    const sidebarClearFilters = document.getElementById('sidebar-clear-filters');
+
+    if (sidebarSearch) {
+        sidebarSearch.addEventListener('input', (event) => {
+            notesSearchQuery = event.target.value;
+            renderSidebarNotes();
+        });
+    }
+
+    if (sidebarTagRail) {
+        sidebarTagRail.addEventListener('click', (event) => {
+            const chip = event.target.closest('.sidebar-tag-chip');
+            if (!chip) return;
+
+            activeNotesTag = chip.dataset.tag || 'all';
+            renderSidebarNotes();
+        });
+    }
+
+    if (sidebarClearFilters) {
+        sidebarClearFilters.addEventListener('click', () => {
+            notesSearchQuery = '';
+            activeNotesTag = 'all';
+            if (sidebarSearch) sidebarSearch.value = '';
+            renderSidebarNotes();
+        });
+    }
+
     if (sidebarWriteBtn) {
         sidebarWriteBtn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(20);
@@ -1498,9 +1663,18 @@ const attachEventListeners = () => {
     // Global Pointer Up listener to finalize batch dragging
     document.addEventListener('pointerup', () => {
         if (isDragging) {
+            const shouldAutoFill = dragVisitedCount === 1 && (lastChangedState === 1 || lastChangedState === 2);
+            const changedDate = lastChangedDate;
+            const changedState = lastChangedState;
+
             isDragging = false;
             dragState = null;
+            dragVisitedCount = 0;
             saveData();
+
+            if (shouldAutoFill && changedDate) {
+                tryAutoFill(changedDate, changedState);
+            }
         }
     });
     
@@ -1508,6 +1682,7 @@ const attachEventListeners = () => {
     document.addEventListener('pointercancel', () => {
         isDragging = false;
         dragState = null;
+        dragVisitedCount = 0;
     });
 };
 
