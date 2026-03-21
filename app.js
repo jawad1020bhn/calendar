@@ -61,7 +61,7 @@ const statsPanel = document.querySelector('.stats-panel');
 
 // Sparkline Canvas
 const sparklineCanvas = document.getElementById('sparkline-canvas');
-const ctx = sparklineCanvas.getContext('2d');
+const ctx = sparklineCanvas ? sparklineCanvas.getContext('2d') : null;
 
 // Sound Effects (Using extremely short simple generic browser beeps via AudioContext to avoid asset loading)
 let audioCtx = null;
@@ -313,6 +313,8 @@ const saveData = () => {
     localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
     updateStats();
     drawSparkline();
+    renderCalendar();
+    renderSidebarNotes();
 };
 
 /**
@@ -649,8 +651,11 @@ const handleDayInteraction = (cell, isPointerDown = false) => {
     cell.classList.add('animate-pop');
     setTimeout(() => cell.classList.remove('animate-pop'), 500);
 
-    // Do not call saveData() or tryAutoFill() repeatedly during a drag.
-    // We defer those to the global pointerup event to save performance.
+    // If it was a single click (not a drag), save immediately.
+    // Otherwise, we wait for the global pointerup event to save performance.
+    if (isPointerDown && !isDragging) {
+        saveData();
+    }
 };
 
 /**
@@ -1507,4 +1512,8 @@ const attachEventListeners = () => {
 };
 
 // Start Apps
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}

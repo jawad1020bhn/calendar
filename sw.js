@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yearly-tracker-v4';
+const CACHE_NAME = 'yearly-tracker-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
