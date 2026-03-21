@@ -7,10 +7,12 @@
 const LOCAL_STORAGE_KEY = 'cal_cases_data';
 const THEME_STORAGE_KEY = 'cal_theme_pref';
 const NOTES_STORAGE_KEY = 'cal_notes_data';
+const NOTE_DRAFTS_STORAGE_KEY = 'cal_note_drafts';
 
 // App State Cache
 let casesData = {};
 let notesData = {};
+let noteDrafts = {};
 let currentYear = new Date().getFullYear();
 
 // Undo System (single-level snapshot)
@@ -25,7 +27,14 @@ const today = new Date();
 const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
 // DOM Elements
-const themeToggleBtn = document.getElementById('theme-toggle-btn');
+const getUniqueElements = (...ids) => {
+    const seen = new Set();
+    return ids
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !seen.has(el) && seen.add(el));
+};
+
+const themeToggleButtons = getUniqueElements('theme-toggle-btn', 'nav-theme-toggle');
 const calendarGrid = document.getElementById('calendar-grid');
 const streakVal = document.getElementById('streak-val');
 const successVal = document.getElementById('success-val');
@@ -33,14 +42,19 @@ const failVal = document.getElementById('fail-val');
 const currentYearTitle = document.getElementById('current-year');
 const resetBtn = document.getElementById('reset-btn');
 const exportBtn = document.getElementById('export-btn');
-const exportPosterBtn = document.getElementById('export-poster-btn');
+const exportPosterButtons = getUniqueElements('export-poster-btn', 'nav-export-poster');
 const importFile = document.getElementById('import-file');
 const bestStreakVal = document.getElementById('best-streak-val');
+const notesSearchInput = document.getElementById('notes-search');
+const notesFilterButtons = Array.from(document.querySelectorAll('.sidebar-filter-chip'));
+const notesResults = document.getElementById('notes-results');
 
 // Modal Elements
 const noteModal = document.getElementById('note-modal');
 const modalTitle = document.getElementById('modal-date-title');
 const noteTextarea = document.getElementById('note-textarea');
+const noteDraftState = document.getElementById('note-draft-state');
+const noteCharCount = document.getElementById('note-char-count');
 const modalCloseBtn = document.getElementById('modal-x-close');
 const modalSaveBtn = document.getElementById('modal-save-btn');
 let activeNoteDate = null;
@@ -130,12 +144,16 @@ const getFirstDayOfMonth = (monthIndex, year) => {
 /**
  * Theme Management
  */
+const updateThemeToggleLabels = (theme) => {
+    themeToggleButtons.forEach((button) => {
+        button.textContent = theme === 'light' ? 'Dark Mode' : 'Light Mode';
+    });
+};
+
 const loadTheme = () => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
-    if (themeToggleBtn) {
-        themeToggleBtn.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
-    }
+    updateThemeToggleLabels(savedTheme);
 };
 
 const toggleTheme = () => {
@@ -144,15 +162,9 @@ const toggleTheme = () => {
     
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
-    
-    const darkLabel = 'Switch to Light';
-    const lightLabel = 'Switch to Dark';
-    const label = newTheme === 'light' ? lightLabel : darkLabel;
-    if (themeToggleBtn) themeToggleBtn.textContent = label;
-    
-    // Sync desktop nav theme button
-    const navTheme = document.getElementById('nav-theme-toggle');
-    if (navTheme) navTheme.textContent = newTheme === 'light' ? 'Dark Mode' : 'Light Mode';
+
+    updateThemeToggleLabels(newTheme);
+    drawSparkline();
 };
 
 /**
@@ -162,15 +174,6 @@ const init = () => {
     loadTheme();
     currentYearTitle.textContent = currentYear;
     document.title = 'The Daily Tracker // ' + currentYear;
-    
-    // Sync desktop nav year
-    const navYear = document.getElementById('nav-year');
-    if (navYear) navYear.textContent = currentYear;
-    
-    // Sync desktop nav theme label
-    const navTheme = document.getElementById('nav-theme-toggle');
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
-    if (navTheme) navTheme.textContent = savedTheme === 'light' ? 'Dark Mode' : 'Light Mode';
     
     loadData();
     renderCalendar();
@@ -238,6 +241,39 @@ const init = () => {
     }
 };
 
+const updateNoteMeta = (text = '', mode = 'saved') => {
+    if (noteCharCount) {
+        noteCharCount.textContent = `${text.length} ${text.length === 1 ? 'character' : 'characters'}`;
+    }
+
+    if (!noteDraftState) return;
+
+    noteDraftState.classList.remove('is-draft', 'is-empty');
+
+    if (mode === 'draft') {
+        noteDraftState.textContent = 'Draft saved on device';
+        noteDraftState.classList.add('is-draft');
+    } else if (mode === 'empty') {
+        noteDraftState.textContent = 'No draft yet';
+        noteDraftState.classList.add('is-empty');
+    } else {
+        noteDraftState.textContent = text ? 'Saved note loaded' : 'Ready for a new note';
+    }
+};
+
+const getSelectedNoteText = (dateStr) => {
+    if (!dateStr) return '';
+    if (typeof noteDrafts[dateStr] === 'string') {
+        return noteDrafts[dateStr];
+    }
+    return notesData[dateStr] || '';
+};
+
+const getActiveNotesFilter = () => {
+    const activeButton = notesFilterButtons.find((button) => button.classList.contains('active'));
+    return activeButton?.dataset.filter || 'all';
+};
+
 /**
  * Render Notes Sidebar (Desktop)
  */
@@ -247,14 +283,36 @@ const renderSidebarNotes = () => {
     if (!list || !empty) return;
     
     list.innerHTML = '';
+    const searchQuery = (notesSearchInput?.value || '').trim().toLowerCase();
+    const filterValue = getActiveNotesFilter();
     
     // Collect all notes, sort by date descending (most recent first)
     const noteEntries = Object.entries(notesData)
         .filter(([_, val]) => val && val.trim())
+        .filter(([dateStr, val]) => {
+            const state = casesData[dateStr] || 0;
+            const matchesQuery = !searchQuery || val.toLowerCase().includes(searchQuery) || dateStr.includes(searchQuery);
+            const matchesState = filterValue === 'all'
+                || (filterValue === 'clean' && state === 1)
+                || (filterValue === 'relapse' && state === 2)
+                || (filterValue === 'unmarked' && state === 0);
+
+            return matchesQuery && matchesState;
+        })
         .sort((a, b) => b[0].localeCompare(a[0]));
+
+    if (notesResults) {
+        const queryLabel = searchQuery ? ` for “${searchQuery}”` : '';
+        notesResults.textContent = noteEntries.length
+            ? `Showing ${noteEntries.length} note${noteEntries.length === 1 ? '' : 's'}${queryLabel}`
+            : `No notes match${queryLabel}`;
+    }
     
     if (noteEntries.length === 0) {
         empty.style.display = 'block';
+        empty.innerHTML = searchQuery || filterValue !== 'all'
+            ? '<p>No notes match this search.</p><p class="sidebar-hint">Try a different keyword or filter.</p>'
+            : '<p>No inscriptions yet.</p><p class="sidebar-hint">Double-click any day to leave a thought.</p>';
         return;
     }
     
@@ -298,6 +356,7 @@ const renderSidebarNotes = () => {
 const loadData = () => {
     const savedCases = localStorage.getItem(LOCAL_STORAGE_KEY);
     const savedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
+    const savedDrafts = localStorage.getItem(NOTE_DRAFTS_STORAGE_KEY);
     
     if (savedCases) {
         try { casesData = JSON.parse(savedCases); } catch (e) { casesData = {}; }
@@ -306,11 +365,16 @@ const loadData = () => {
     if (savedNotes) {
         try { notesData = JSON.parse(savedNotes); } catch (e) { notesData = {}; }
     } else { notesData = {}; }
+
+    if (savedDrafts) {
+        try { noteDrafts = JSON.parse(savedDrafts); } catch (e) { noteDrafts = {}; }
+    } else { noteDrafts = {}; }
 };
 
 const saveData = () => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(casesData));
     localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
+    localStorage.setItem(NOTE_DRAFTS_STORAGE_KEY, JSON.stringify(noteDrafts));
     updateStats();
     drawSparkline();
     renderCalendar();
@@ -331,14 +395,32 @@ const shareProgress = async () => {
                 text: text,
                 url: window.location.origin
             });
+            return;
         } catch (err) {
             console.log('Share failed', err);
         }
-    } else {
-        // Fallback: Copy to clipboard
-        navigator.clipboard.writeText(text);
-        alert('Progress copied to clipboard!');
     }
+
+    if (navigator.clipboard?.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            alert('Progress copied to clipboard!');
+            return;
+        } catch (err) {
+            console.log('Clipboard copy failed', err);
+        }
+    }
+
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.setAttribute('readonly', 'true');
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    alert('Progress copied to clipboard!');
 };
 
 const calculateStatsValues = () => {
@@ -423,16 +505,17 @@ const importData = (event) => {
 const exportPoster = () => {
     const pCanvas = document.getElementById('poster-canvas');
     if (!pCanvas) return;
-    
-    // Set for high-res A4 paper proportions
-    const width = 2480; 
+
+    const width = 2480;
     const height = 3508;
+    const marginX = 200;
+    const rowHeight = 600;
+    const columnSpacing = 120;
     pCanvas.width = width;
     pCanvas.height = height;
     
     const pCtx = pCanvas.getContext('2d');
-    
-    // Theming for poster (Archival dark theme by default for premium look)
+
     const bgColor = '#181716';
     const textColor = '#EAE6DF';
     const dimColor = '#88837C';
@@ -440,6 +523,8 @@ const exportPoster = () => {
     const successColor = '#205E41';
     const failColor = '#D64235';
     const neutralColor = '#242220';
+    const textureColor = 'rgba(255,255,255, 0.03)';
+    const dayTextColor = '#EAE6DF';
 
     // 1. Fill Background
     pCtx.fillStyle = bgColor;
@@ -453,7 +538,7 @@ const exportPoster = () => {
     for(let i=0; i<100; i++) {
         for(let j=0; j<100; j++) {
             if(Math.random() > 0.95) {
-                nCtx.fillStyle = 'rgba(255,255,255, 0.03)';
+                nCtx.fillStyle = textureColor;
                 nCtx.fillRect(i, j, 1, 1);
             }
         }
@@ -463,7 +548,6 @@ const exportPoster = () => {
     pCtx.fillRect(0, 0, width, height);
 
     // 3. Draw Header
-    const marginX = 200;
     let cursorY = 300;
     
     pCtx.font = '500 32px Epilogue, sans-serif';
@@ -493,16 +577,15 @@ const exportPoster = () => {
     cursorY += 200;
     
     const cols = 3;
-    const colSpacing = 120;
-    const cw = (width - (marginX * 2) - (colSpacing * (cols - 1))) / cols; // cell width per month
+    const cw = (width - (marginX * 2) - (columnSpacing * (cols - 1))) / cols; // cell width per month
     const cellRadius = cw / 14 - 8; // Based on 7 grid
     
     MONTHS.forEach((monthName, mIndex) => {
         const row = Math.floor(mIndex / cols);
         const col = mIndex % cols;
         
-        const mBaseX = marginX + (col * (cw + colSpacing));
-        const mBaseY = cursorY + (row * 600); // month card height
+        const mBaseX = marginX + (col * (cw + columnSpacing));
+        const mBaseY = cursorY + (row * rowHeight); // month card height
         
         // Month Header
         pCtx.font = 'italic 400 80px "Instrument Serif", serif';
@@ -557,7 +640,7 @@ const exportPoster = () => {
                 pCtx.fill();
                 
                 // Draw Day Number
-                pCtx.fillStyle = (state === 1 || state === 2) ? '#fff' : textColor;
+                pCtx.fillStyle = (state === 1 || state === 2) ? '#fff' : dayTextColor;
                 pCtx.fillText(dayNum, cellX, cellY + 8); // +8 for baseline
                 
                 // Note indicator
@@ -650,6 +733,10 @@ const handleDayInteraction = (cell, isPointerDown = false) => {
     void cell.offsetWidth; // Reflow
     cell.classList.add('animate-pop');
     setTimeout(() => cell.classList.remove('animate-pop'), 500);
+
+    if (isPointerDown && newState !== 0) {
+        tryAutoFill(dateStr, newState);
+    }
 
     // If it was a single click (not a drag), save immediately.
     // Otherwise, we wait for the global pointerup event to save performance.
@@ -768,7 +855,7 @@ const tryAutoFill = (changedDateStr, newState) => {
     autofillTargetState.textContent = stateLabel;
     
     // Style the state text to match its color
-    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-failed)';
+    autofillTargetState.style.color = newState === 1 ? 'var(--color-success)' : 'var(--color-fail)';
     
     // Store state globally for the event listener attached in attachEventListeners()
     pendingAutofill = {
@@ -837,7 +924,8 @@ const openNoteModal = (e) => {
     dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
     
     modalTitle.textContent = `${MONTHS[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
-    noteTextarea.value = notesData[activeNoteDate] || '';
+    noteTextarea.value = getSelectedNoteText(activeNoteDate);
+    updateNoteMeta(noteTextarea.value, noteDrafts[activeNoteDate] !== undefined ? 'draft' : (noteTextarea.value ? 'saved' : 'empty'));
     
     noteModal.classList.add('active');
     setTimeout(() => noteTextarea.focus(), 100);
@@ -874,6 +962,7 @@ const saveNoteModal = () => {
     } else {
         delete notesData[activeNoteDate];
     }
+    delete noteDrafts[activeNoteDate];
     saveData();
     closeNoteModal();
     renderCalendar();
@@ -1246,6 +1335,7 @@ const attachEventListeners = () => {
         if(confirm("Are you sure you want to clear ALL tracked data for " + currentYear + "? This cannot be undone.")) {
             casesData = {};
             notesData = {};
+            noteDrafts = {};
             saveData();
             renderCalendar();
         }
@@ -1301,17 +1391,20 @@ const attachEventListeners = () => {
             }
         });
     }
-    if (exportPosterBtn) {
-        exportPosterBtn.addEventListener('click', () => {
-            exportPosterBtn.textContent = 'Generating...';
+    exportPosterButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const originalLabel = button.textContent;
+            button.textContent = 'Generating...';
             setTimeout(() => {
                 exportPoster();
-                exportPosterBtn.textContent = 'Print as Poster';
+                button.textContent = originalLabel;
             }, 100);
         });
-    }
+    });
     importFile.addEventListener('change', importData);
-    if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
+    themeToggleButtons.forEach((button) => {
+        button.addEventListener('click', toggleTheme);
+    });
     
     // Advanced PWA: Share Progress
     const shareBtn = document.getElementById('share-btn');
@@ -1376,7 +1469,8 @@ const attachEventListeners = () => {
             activeNoteDate = todayStr;
             const todayDate = new Date();
             modalTitle.textContent = MONTHS[todayDate.getMonth()] + ' ' + todayDate.getDate() + ', ' + todayDate.getFullYear();
-            noteTextarea.value = notesData[todayStr] || '';
+            noteTextarea.value = getSelectedNoteText(todayStr);
+            updateNoteMeta(noteTextarea.value, noteDrafts[todayStr] !== undefined ? 'draft' : (noteTextarea.value ? 'saved' : 'empty'));
             noteModal.classList.add('active');
             document.body.style.overflow = 'hidden';
             setTimeout(() => noteTextarea.focus(), 100);
@@ -1397,13 +1491,37 @@ const attachEventListeners = () => {
             if (navigator.vibrate) navigator.vibrate(10);
         });
     });
+
+    if (noteTextarea) {
+        noteTextarea.addEventListener('input', () => {
+            const value = noteTextarea.value;
+            if (activeNoteDate) {
+                if (value.trim()) {
+                    noteDrafts[activeNoteDate] = value;
+                } else {
+                    delete noteDrafts[activeNoteDate];
+                }
+                localStorage.setItem(NOTE_DRAFTS_STORAGE_KEY, JSON.stringify(noteDrafts));
+            }
+            updateNoteMeta(value, value.trim() ? 'draft' : 'empty');
+        });
+    }
+
+    if (notesSearchInput) {
+        notesSearchInput.addEventListener('input', renderSidebarNotes);
+    }
+
+    notesFilterButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            notesFilterButtons.forEach((candidate) => candidate.classList.remove('active'));
+            button.classList.add('active');
+            renderSidebarNotes();
+        });
+    });
     
     // Desktop Navigation Bar
     const navJumpToday = document.getElementById('nav-jump-today');
     const navToggleNotes = document.getElementById('nav-toggle-notes');
-    const navThemeToggle = document.getElementById('nav-theme-toggle');
-    const navExportPoster = document.getElementById('nav-export-poster');
-    
     if (navJumpToday) {
         navJumpToday.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1428,20 +1546,6 @@ const attachEventListeners = () => {
             if (sidebar) {
                 sidebar.classList.toggle('active');
             }
-        });
-    }
-    
-    if (navThemeToggle) {
-        navThemeToggle.addEventListener('click', toggleTheme);
-    }
-    
-    if (navExportPoster) {
-        navExportPoster.addEventListener('click', () => {
-            navExportPoster.textContent = 'Generating...';
-            setTimeout(() => {
-                exportPoster();
-                navExportPoster.textContent = 'Save Poster';
-            }, 100);
         });
     }
 
