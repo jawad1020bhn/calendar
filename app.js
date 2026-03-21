@@ -12,6 +12,8 @@ const NOTES_STORAGE_KEY = 'cal_notes_data';
 let casesData = {};
 let notesData = {};
 let currentYear = new Date().getFullYear();
+let notesSearchQuery = '';
+let activeNotesTag = 'all';
 
 // Undo System (single-level snapshot)
 let undoSnapshot = null;
@@ -232,26 +234,132 @@ const init = () => {
 /**
  * Render Notes Sidebar (Desktop)
  */
+const extractNoteTags = (text) => {
+    const matches = text.match(/#[A-Za-z0-9_-]+/g) || [];
+    const seen = new Set();
+
+    return matches.filter((tag) => {
+        const normalized = tag.toLowerCase();
+        if (seen.has(normalized)) return false;
+        seen.add(normalized);
+        return true;
+    });
+};
+
+const getSortedNoteEntries = () => {
+    return Object.entries(notesData)
+        .filter(([_, val]) => val && val.trim())
+        .sort((a, b) => b[0].localeCompare(a[0]));
+};
+
+const getFilteredNoteEntries = (noteEntries) => {
+    const query = notesSearchQuery.trim().toLowerCase();
+
+    return noteEntries.filter(([dateStr, text]) => {
+        const tags = extractNoteTags(text);
+        const matchesTag = activeNotesTag === 'all'
+            || tags.some((tag) => tag.toLowerCase() === activeNotesTag);
+        const matchesQuery = !query
+            || text.toLowerCase().includes(query)
+            || dateStr.includes(query)
+            || tags.some((tag) => tag.toLowerCase().includes(query));
+
+        return matchesTag && matchesQuery;
+    });
+};
+
+const renderSidebarTagRail = (noteEntries) => {
+    const tagRail = document.getElementById('sidebar-tag-rail');
+    if (!tagRail) return;
+
+    tagRail.innerHTML = '';
+
+    const allChip = document.createElement('button');
+    allChip.type = 'button';
+    allChip.className = 'sidebar-tag-chip' + (activeNotesTag === 'all' ? ' active' : '');
+    allChip.textContent = 'All';
+    allChip.dataset.tag = 'all';
+    tagRail.appendChild(allChip);
+
+    const tagCounts = new Map();
+    noteEntries.forEach(([_, text]) => {
+        extractNoteTags(text).forEach((tag) => {
+            const normalized = tag.toLowerCase();
+            if (!tagCounts.has(normalized)) {
+                tagCounts.set(normalized, { label: tag, count: 0 });
+            }
+            tagCounts.get(normalized).count += 1;
+        });
+    });
+
+    [...tagCounts.entries()]
+        .sort((a, b) => b[1].count - a[1].count || a[1].label.localeCompare(b[1].label))
+        .slice(0, 12)
+        .forEach(([normalized, meta]) => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'sidebar-tag-chip' + (activeNotesTag === normalized ? ' active' : '');
+            chip.textContent = `${meta.label} · ${meta.count}`;
+            chip.dataset.tag = normalized;
+            tagRail.appendChild(chip);
+        });
+};
+
 const renderSidebarNotes = () => {
     const list = document.getElementById('sidebar-notes-list');
     const empty = document.getElementById('sidebar-empty');
+    const searchInput = document.getElementById('sidebar-search');
+    const status = document.getElementById('sidebar-filter-status');
+    const clearBtn = document.getElementById('sidebar-clear-filters');
     if (!list || !empty) return;
     
     list.innerHTML = '';
+
+    if (searchInput && searchInput.value !== notesSearchQuery) {
+        searchInput.value = notesSearchQuery;
+    }
     
-    // Collect all notes, sort by date descending (most recent first)
-    const noteEntries = Object.entries(notesData)
-        .filter(([_, val]) => val && val.trim())
-        .sort((a, b) => b[0].localeCompare(a[0]));
+    const noteEntries = getSortedNoteEntries();
+    const filteredEntries = getFilteredNoteEntries(noteEntries);
+    const hasActiveFilter = notesSearchQuery.trim() || activeNotesTag !== 'all';
+
+    renderSidebarTagRail(noteEntries);
+
+    if (status) {
+        if (noteEntries.length === 0) {
+            status.textContent = 'All inscriptions';
+        } else if (hasActiveFilter) {
+            status.textContent = `Showing ${filteredEntries.length} of ${noteEntries.length}`;
+        } else {
+            status.textContent = `${noteEntries.length} inscription${noteEntries.length === 1 ? '' : 's'}`;
+        }
+    }
+
+    if (clearBtn) {
+        clearBtn.style.visibility = hasActiveFilter ? 'visible' : 'hidden';
+    }
     
     if (noteEntries.length === 0) {
+        empty.innerHTML = `
+            <p>No inscriptions yet.</p>
+            <p class="sidebar-hint">Double-click any day to leave a thought.</p>
+        `;
+        empty.style.display = 'block';
+        return;
+    }
+
+    if (filteredEntries.length === 0) {
+        empty.innerHTML = `
+            <p>No notes match this filter.</p>
+            <p class="sidebar-hint">Try another phrase or clear the active tag.</p>
+        `;
         empty.style.display = 'block';
         return;
     }
     
     empty.style.display = 'none';
     
-    noteEntries.forEach(([dateStr, text]) => {
+    filteredEntries.forEach(([dateStr, text]) => {
         const card = document.createElement('div');
         card.className = 'sidebar-note-card';
         
@@ -267,8 +375,24 @@ const renderSidebarNotes = () => {
         textEl.className = 'sidebar-note-text';
         textEl.textContent = text;
         
+        const tags = extractNoteTags(text);
+
         card.appendChild(dateEl);
         card.appendChild(textEl);
+
+        if (tags.length > 0) {
+            const tagList = document.createElement('div');
+            tagList.className = 'sidebar-note-tags';
+
+            tags.forEach((tag) => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'sidebar-note-tag';
+                tagEl.textContent = tag;
+                tagList.appendChild(tagEl);
+            });
+
+            card.appendChild(tagList);
+        }
         
         // Click to scroll to that day and open edit
         card.addEventListener('click', () => {
@@ -1354,6 +1478,36 @@ const attachEventListeners = () => {
     
     // Mobile "Log Today" inside Notes overlay
     const sidebarWriteBtn = document.getElementById('sidebar-write-btn');
+    const sidebarSearch = document.getElementById('sidebar-search');
+    const sidebarTagRail = document.getElementById('sidebar-tag-rail');
+    const sidebarClearFilters = document.getElementById('sidebar-clear-filters');
+
+    if (sidebarSearch) {
+        sidebarSearch.addEventListener('input', (event) => {
+            notesSearchQuery = event.target.value;
+            renderSidebarNotes();
+        });
+    }
+
+    if (sidebarTagRail) {
+        sidebarTagRail.addEventListener('click', (event) => {
+            const chip = event.target.closest('.sidebar-tag-chip');
+            if (!chip) return;
+
+            activeNotesTag = chip.dataset.tag || 'all';
+            renderSidebarNotes();
+        });
+    }
+
+    if (sidebarClearFilters) {
+        sidebarClearFilters.addEventListener('click', () => {
+            notesSearchQuery = '';
+            activeNotesTag = 'all';
+            if (sidebarSearch) sidebarSearch.value = '';
+            renderSidebarNotes();
+        });
+    }
+
     if (sidebarWriteBtn) {
         sidebarWriteBtn.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(20);
