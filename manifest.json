@@ -1,44 +1,68 @@
 {
   "name": "The Daily Tracker",
   "short_name": "Tracker",
-  "description": "An archival daily habit and recovery record.",
+  "id": "com.archival.dailytracker.v1",
+  "description": "An elite archival record for daily habits, discipline, and recovery.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#181716",
   "theme_color": "#181716",
   "orientation": "portrait",
-  "display_override": ["window-controls-overlay"],
+  "display_override": ["window-controls-overlay", "minimal-ui"],
+  "categories": ["health", "productivity", "lifestyle"],
   "launch_handler": {
     "client_mode": "focus-existing"
   },
   "shortcuts": [
     {
-      "name": "Log Status",
-      "short_name": "Log",
-      "description": "Log your status for today",
+      "name": "Jump to Today",
+      "short_name": "Today",
+      "description": "Log your status for today immediately.",
       "url": "./index.html?action=log",
-      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23EAE6DF' stroke-width='2'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z'/%3E%3C/svg%3E", "sizes": "192x192" }]
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23EAE6DF' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E", "sizes": "192x192" }]
     },
     {
-      "name": "View Statistics",
+      "name": "Analytics Dashboard",
       "short_name": "Stats",
-      "description": "View your habit statistics",
+      "description": "Review your recovery statistics and distribution.",
       "url": "./index.html?action=stats",
-      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23EAE6DF' stroke-width='2'%3E%3Cpath d='M3 3v18h18'/%3E%3Cpath d='M18 9l-5 5-2-2-4 4'/%3E%3C/svg%3E", "sizes": "192x192" }]
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23EAE6DF' stroke-width='2'%3E%3Cpath d='M18 20V10M12 20V4M6 20v-6'/%3E%3C/svg%3E", "sizes": "192x192" }]
+    },
+    {
+      "name": "Export Archive",
+      "short_name": "Export",
+      "description": "Download your full tracking record.",
+      "url": "./index.html?action=export",
+      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23EAE6DF' stroke-width='2'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'/%3E%3C/svg%3E", "sizes": "192x192" }]
     }
   ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+tracker",
+      "url": "./index.html?uri=%s"
+    }
+  ],
+  "share_target": {
+    "action": "./index.html",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23181716'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%23EAE6DF' stroke-width='4'/%3E%3C/svg%3E",
       "sizes": "192x192",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23181716'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%23EAE6DF' stroke-width='4'/%3E%3C/svg%3E",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }

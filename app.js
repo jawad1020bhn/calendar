@@ -105,11 +105,92 @@ const playSound = (type) => {
         }
     } catch(e) {}
     
-    // Haptics if available
+    // Haptics for Principal-level tactile feedback
     if (navigator.vibrate) {
-        if (type === 'success') navigator.vibrate(50);
-        else if (type === 'fail') navigator.vibrate([30, 50, 30]);
-        else navigator.vibrate(20);
+        if (type === 'success') navigator.vibrate([10, 30, 20]); // Subtle confirmation
+        else if (type === 'fail') navigator.vibrate([100, 50, 100]); // Strong warning
+        else navigator.vibrate(10); // Minimal tick
+    }
+};
+
+/**
+ * Elite PWA Integration (Principal Level)
+ */
+const updateAppBadge = () => {
+    if ('setAppBadge' in navigator) {
+        const stats = calculateStatsValues();
+        if (stats.streak > 0) {
+            navigator.setAppBadge(stats.streak).catch(() => {});
+        } else {
+            navigator.clearAppBadge().catch(() => {});
+        }
+    }
+};
+
+const setupConnectivityMonitor = () => {
+    const showToast = (msg, type = 'info') => {
+        // Remove existing toast if any
+        const existing = document.querySelector('.pwa-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = `pwa-toast ${type}`;
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        // Trigger reflow for animation
+        void toast.offsetWidth;
+        toast.classList.add('visible');
+        
+        setTimeout(() => {
+            toast.classList.remove('visible');
+            setTimeout(() => toast.remove(), 500);
+        }, 4000);
+    };
+
+    window.addEventListener('online', () => showToast('SYNC ESTABLISHED — ONLINE', 'success'));
+    window.addEventListener('offline', () => showToast('CONNECTION INTERRUPTED — OFFLINE', 'info'));
+};
+
+const handlePWAIntents = () => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    
+    if (action === 'log') {
+        const todayCell = document.querySelector(`[data-date="${todayStr}"]`);
+        if (todayCell) todayCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (action === 'stats') {
+        const statsPanel = document.querySelector('.stats-panel');
+        if (window.innerWidth < 1024 && statsPanel) {
+            statsPanel.classList.add('active');
+        }
+    } else if (action === 'export') {
+        exportPoster();
+    }
+    
+    // Protocol handler: web+tracker://2026-01-01
+    const uri = params.get('uri');
+    if (uri && (uri.startsWith('web+tracker:') || uri.includes('web%2Btracker'))) {
+        const dateMatch = decodeURIComponent(uri).match(/\d{4}-\d{2}-\d{2}/);
+        if (dateMatch) {
+            const targetDate = dateMatch[0];
+            const cell = document.querySelector(`.day-cell[data-date="${targetDate}"]`);
+            if (cell) {
+                cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                cell.classList.add('pwa-highlight');
+                setTimeout(() => cell.classList.remove('pwa-highlight'), 2000);
+            }
+        }
+    }
+};
+
+const setupWCO = () => {
+    if ('windowControlsOverlay' in navigator) {
+        const updateWCO = () => {
+            const isVisible = navigator.windowControlsOverlay.visible;
+            document.body.classList.toggle('wco-active', isVisible);
+        };
+        navigator.windowControlsOverlay.addEventListener('geometrychange', updateWCO);
+        updateWCO();
     }
 };
 
@@ -449,6 +530,7 @@ const saveData = () => {
     drawSparkline();
     renderCalendar();
     renderSidebarNotes();
+    updateAppBadge(); // Elite PWA Badging
 };
 
 /**
@@ -1736,15 +1818,15 @@ const attachEventListeners = () => {
     if (bnavToday) {
         bnavToday.addEventListener('click', () => {
             closeAllOverlays();
-            const todayCell = document.querySelector('.day-cell.today');
-            if (todayCell) {
-                todayCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                todayCell.style.transition = 'box-shadow 0.3s, transform 0.3s';
-                todayCell.style.boxShadow = '0 0 0 4px var(--color-today)';
-                todayCell.style.transform = 'scale(1.3)';
+            const cell = document.querySelector(`.day-cell[data-date="${todayStr}"]`);
+            if (cell) {
+                cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                cell.style.transition = 'box-shadow 0.3s, transform 0.3s';
+                cell.style.boxShadow = '0 0 0 4px var(--color-today)';
+                cell.style.transform = 'scale(1.3)';
                 setTimeout(() => {
-                    todayCell.style.boxShadow = '';
-                    todayCell.style.transform = '';
+                    cell.style.boxShadow = '';
+                    cell.style.transform = '';
                 }, 800);
             }
         });

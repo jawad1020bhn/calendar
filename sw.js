@@ -1,10 +1,11 @@
-const CACHE_NAME = 'yearly-tracker-v6';
+const CACHE_NAME = 'yearly-tracker-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './styles.css',
   './app.js',
-  './manifest.json'
+  './manifest.json',
+  './offline.html'
 ];
 
 // Install: pre-cache shell assets
@@ -32,12 +33,14 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: Network-first strategy for HTML (always fresh on Vercel),
-// Cache-first for static assets (CSS/JS/fonts) for speed.
+/**
+ * Fetch Strategies
+ */
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  
-  // Network-first for navigation (HTML pages)
+
+  // 1. Navigation strategy (HTML)
+  // Network-first, then cache, then offline fallback
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -46,24 +49,46 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           return response;
         })
-        .catch(() => caches.match(event.request))
+        .catch(() => {
+          return caches.match(event.request)
+            .then((cachedResponse) => {
+              return cachedResponse || caches.match('./offline.html');
+            });
+        })
     );
     return;
   }
-  
-  // Cache-first for everything else (CSS, JS, fonts, images)
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) return response;
-        return fetch(event.request).then((fetchResponse) => {
-          // Only cache same-origin and successful responses
-          if (fetchResponse.ok && url.origin === self.location.origin) {
-            const clone = fetchResponse.clone();
+
+  // 2. Asset strategy (JS, CSS, Icons)
+  // Stale-While-Revalidate: Serve from cache immediately, update in background
+  if (ASSETS_TO_CACHE.some(asset => event.request.url.includes(asset.replace('./', '')))) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        const fetchPromise = fetch(event.request).then((networkResponse) => {
+          if (networkResponse.ok) {
+            const clone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
-          return fetchResponse;
+          return networkResponse;
         });
+        return cachedResponse || fetchPromise;
       })
+    );
+    return;
+  }
+
+  // 3. Generic strategy
+  // Cache-first for same-origin, Network-only otherwise
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) return cachedResponse;
+      return fetch(event.request).then((networkResponse) => {
+        if (networkResponse.ok && url.origin === self.location.origin) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      });
+    })
   );
 });
