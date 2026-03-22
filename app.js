@@ -203,32 +203,66 @@ const init = () => {
     // Draw initial sparkline
     setTimeout(drawSparkline, 100);
 
-    // Minimalist Onboarding
-    const onboardingOverlay = document.getElementById('onboarding-overlay');
-    const startBtn = document.getElementById('onboarding-start-btn');
-    if (Object.keys(casesData).length === 0 && !localStorage.getItem('cal_onboarded_v1')) {
-        if (onboardingOverlay) {
-            onboardingOverlay.style.opacity = '1';
-            onboardingOverlay.style.pointerEvents = 'auto';
-        }
-    } else {
-        if (onboardingOverlay) {
-            onboardingOverlay.style.display = 'none';
-        }
-    }
-    
-    if (startBtn) {
-        startBtn.addEventListener('click', () => {
-            if (onboardingOverlay) {
-                onboardingOverlay.style.opacity = '0';
-                onboardingOverlay.style.pointerEvents = 'none';
+    // Premium Onboarding Controller
+    const setupOnboarding = () => {
+        const overlay = document.getElementById('onboarding-overlay');
+        const slides = document.querySelectorAll('.onboarding-slide');
+        const nextBtns = document.querySelectorAll('.onboarding-next-btn');
+        const startBtn = document.getElementById('onboarding-start-btn');
+        const skipBtn = document.getElementById('onboarding-skip-btn');
+        const dots = document.querySelectorAll('#onboarding-pagination .dot');
+        
+        let currentSlide = 0;
+
+        const showSlide = (index) => {
+            slides.forEach((s, i) => {
+                s.classList.toggle('active', i === index);
+            });
+            dots.forEach((d, i) => {
+                d.classList.toggle('active', i === index);
+            });
+            currentSlide = index;
+        };
+
+        const closeOnboarding = () => {
+            if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
                 setTimeout(() => {
-                    onboardingOverlay.style.display = 'none';
+                    overlay.style.display = 'none';
                 }, 1000);
             }
             localStorage.setItem('cal_onboarded_v1', 'true');
+        };
+
+        nextBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (currentSlide < slides.length - 1) {
+                    showSlide(currentSlide + 1);
+                }
+            });
         });
-    }
+
+        if (startBtn) startBtn.addEventListener('click', closeOnboarding);
+        if (skipBtn) skipBtn.addEventListener('click', closeOnboarding);
+
+        // Initial check for first-time entry
+        const hasData = Object.keys(casesData).length > 0;
+        const hasOnboarded = localStorage.getItem('cal_onboarded_v1');
+
+        if (!hasData && !hasOnboarded) {
+            if (overlay) {
+                overlay.style.opacity = '1';
+                overlay.style.pointerEvents = 'auto';
+            }
+        } else {
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+    };
+
+    setupOnboarding();
 };
 
 /**

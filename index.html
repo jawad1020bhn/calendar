@@ -221,12 +221,70 @@
     <!-- Hidden Canvas used for high-res Poster rendering -->
     <canvas id="poster-canvas" style="display: none;"></canvas>
 
-    <!-- Minimalist Onboarding Overlay (First Entry) -->
+    <!-- Premium Editorial Onboarding Overlay -->
     <div class="modal-overlay" id="onboarding-overlay">
-        <div class="onboarding-content">
-            <h2 class="onboarding-title">NO MARKS YET.</h2>
-            <p class="onboarding-sub">Tap a day to log. Double-tap to inscribe.</p>
-            <button class="onboarding-start-btn" id="onboarding-start-btn">BEGIN</button>
+        <div class="onboarding-carousel" id="onboarding-carousel">
+            <!-- Slide 1: Introduction -->
+            <div class="onboarding-slide active" data-index="0">
+                <div class="onboard-tag">Archive NO. 01</div>
+                <h2 class="onboarding-title">THE<br>ARCHIVAL<br>TRACKER.</h2>
+                <p class="onboarding-sub">A beautiful record of your journey. No data leaves this device. Minimalist. Private. Yours.</p>
+                <div class="onboarding-footer">
+                    <button class="onboarding-next-btn">CONTINUE &rarr;</button>
+                </div>
+            </div>
+
+            <!-- Slide 2: Dynamic Marking -->
+            <div class="onboarding-slide" data-index="1">
+                <div class="onboard-tag">Interactions</div>
+                <h2 class="onboarding-title">MARK YOUR<br>JOURNEY.</h2>
+                <div class="onboarding-feature-grid">
+                    <div class="feature-item">
+                        <span class="feature-key">TAP</span>
+                        <span class="feature-desc">Mark a day as Clean or Relapse.</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-key">DRAG</span>
+                        <span class="feature-desc">Mark multiple days in a sequence.</span>
+                    </div>
+                </div>
+                <div class="onboarding-footer">
+                    <button class="onboarding-next-btn">NEXT &rarr;</button>
+                </div>
+            </div>
+
+            <!-- Slide 3: Margin Notes -->
+            <div class="onboarding-slide" data-index="2">
+                <div class="onboard-tag">Inscriptions</div>
+                <h2 class="onboarding-title">LEAVE A<br>MARGIN NOTE.</h2>
+                <div class="onboarding-feature-grid">
+                    <div class="feature-item wide">
+                        <span class="feature-key">DOUBLE TAP</span>
+                        <span class="feature-desc">Open the margin to inscribe your thoughts, tags, or feelings for that specific day.</span>
+                    </div>
+                </div>
+                <div class="onboarding-footer">
+                    <button class="onboarding-next-btn">NEXT &rarr;</button>
+                </div>
+            </div>
+
+            <!-- Slide 4: Save Poster -->
+            <div class="onboarding-slide" data-index="3">
+                <div class="onboard-tag">Record</div>
+                <h2 class="onboarding-title">YOUR LEGACY,<br>EXPORTED.</h2>
+                <p class="onboarding-sub">Generate stunning, high-resolution archival posters of your progress to save or share.</p>
+                <div class="onboarding-footer">
+                    <button class="onboarding-start-btn" id="onboarding-start-btn">BEGIN RECORDING</button>
+                    <button class="onboarding-skip-btn" id="onboarding-skip-btn">Or Skip All</button>
+                </div>
+            </div>
+            
+            <div class="onboarding-pagination" id="onboarding-pagination">
+                <span class="dot active"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
         </div>
     </div>
 
