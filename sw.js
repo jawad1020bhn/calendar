@@ -1,11 +1,13 @@
 const CACHE_NAME = 'yearly-tracker-v7';
+const OFFLINE_URL = './offline.html';
+
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.json',
-  './offline.html'
+  OFFLINE_URL
 ];
 
 // Install: pre-cache shell assets
@@ -13,8 +15,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(ASSETS_TO_CACHE))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 // Activate: clean old caches
@@ -28,67 +30,50 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-/**
- * Fetch Strategies
- */
+// Fetch: Advanced Stale-While-Revalidate strategy
 self.addEventListener('fetch', (event) => {
+  // We only handle GET requests
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
 
-  // 1. Navigation strategy (HTML)
-  // Network-first, then cache, then offline fallback
+  // Strategy for Navigation requests (HTML)
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
-          const clone = response.clone();
+        .then((networkResponse) => {
+          // Update cache with fresh version
+          const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
+          return networkResponse;
         })
         .catch(() => {
+          // If network fails, try cache, or fallback to offline page
           return caches.match(event.request)
-            .then((cachedResponse) => {
-              return cachedResponse || caches.match('./offline.html');
-            });
+            .then((cachedResponse) => cachedResponse || caches.match(OFFLINE_URL));
         })
     );
     return;
   }
 
-  // 2. Asset strategy (JS, CSS, Icons)
+  // Strategy for Assets (CSS, JS, Fonts, Images)
   // Stale-While-Revalidate: Serve from cache immediately, update in background
-  if (ASSETS_TO_CACHE.some(asset => event.request.url.includes(asset.replace('./', '')))) {
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
-          if (networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return networkResponse;
-        });
-        return cachedResponse || fetchPromise;
-      })
-    );
-    return;
-  }
-
-  // 3. Generic strategy
-  // Cache-first for same-origin, Network-only otherwise
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-      return fetch(event.request).then((networkResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // Cache valid same-origin responses
         if (networkResponse.ok && url.origin === self.location.origin) {
           const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return networkResponse;
-      });
+      }).catch(() => null);
+
+      return cachedResponse || fetchPromise;
     })
   );
 });

@@ -73,21 +73,23 @@
                 <div class="stats-panel">
                     <button class="modal-x" id="stats-x-close" aria-label="Close Stats">&times;</button>
 
-                    <div class="stat-block">
-                        <span class="stat-label">Running<br>Streak</span>
-                        <span class="stat-value" id="streak-val">0</span>
-                    </div>
-                    <div class="stat-block">
-                        <span class="stat-label">Longest<br>Streak</span>
-                        <span class="stat-value best-val" id="best-streak-val">0</span>
-                    </div>
-                    <div class="stat-block">
-                        <span class="stat-label">Days<br>Clean</span>
-                        <span class="stat-value success-val" id="success-val">0</span>
-                    </div>
-                    <div class="stat-block">
-                        <span class="stat-label">Days<br>Relapsed</span>
-                        <span class="stat-value fail-val" id="fail-val">0</span>
+                    <div class="stats-panel-grid">
+                        <div class="stat-block">
+                            <span class="stat-label">Running<br>Streak</span>
+                            <span class="stat-value" id="streak-val">0</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-label">Longest<br>Streak</span>
+                            <span class="stat-value best-val" id="best-streak-val">0</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-label">Days<br>Clean</span>
+                            <span class="stat-value success-val" id="success-val">0</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-label">Days<br>Relapsed</span>
+                            <span class="stat-value fail-val" id="fail-val">0</span>
+                        </div>
                     </div>
 
                     <div class="distribution-panel" id="distribution-panel">
@@ -109,7 +111,7 @@
 
                         <div class="actions">
                             <button class="text-btn" id="undo-btn">Retract Last Mark</button>
-                            <button class="text-btn" id="share-btn">Share Progress</button>
+                            <button class="text-btn" id="share-btn">Save Poster</button>
                             <button class="text-btn" id="export-btn">Archive to File</button>
                             <label for="import-file" class="text-btn" id="import-btn">Restore from File</label>
                             <input type="file" id="import-file" accept=".json" style="display: none;">

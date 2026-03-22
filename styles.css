@@ -91,6 +91,7 @@ body {
     max-width: 1400px; /* Cap for ultra-wide */
     margin: 0 auto;
     padding: clamp(2rem, 5vh, 4rem) clamp(1rem, 5vw, 3rem);
+    padding-bottom: 10rem; /* Ensure space for fixed bottom nav */
     flex: 1;
     min-width: 0;
 }
@@ -652,6 +653,11 @@ body {
     background: var(--color-hover);
 }
 
+.text-btn:active {
+    transform: scale(0.98);
+    background: var(--color-hover);
+}
+
 /* Tooltip Styling */
 .help-icon::after {
     content: attr(data-tooltip);
@@ -997,10 +1003,11 @@ body {
 .day-label {
     text-align: center;
     font-family: var(--font-ui);
-    font-size: 0.65rem;
-    color: var(--text-dim);
+    font-size: 0.75rem; /* Increased for mobile visibility */
+    color: var(--text-ink); /* Brighter for mobile */
+    opacity: 0.6;
     margin-bottom: 0.5rem;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .day-cell {
@@ -1697,12 +1704,15 @@ body {
 .segment-btn:hover:not(.active) {
     color: var(--text-ink);
 }
-    padding-top: 2rem;
-    padding-bottom: 5rem;
-    /* Extra space for bottom nav on mobile */
+
+.footer-note {
+    padding-top: 3rem;
+    padding-bottom: 2rem;
+    margin-bottom: 6rem; /* Extra push above bottom nav */
     border-top: 1px solid var(--border-subtle);
     font-size: 0.65rem;
     color: var(--text-dim);
+    line-height: 1.6;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     text-align: center;
@@ -1754,6 +1764,12 @@ body {
 .bnav-item:hover,
 .bnav-item:active {
     color: var(--text-ink);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.bnav-item:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
 }
 
 .bnav-item:hover svg,
@@ -1808,10 +1824,17 @@ body {
     }
 
     .masthead {
-        flex-direction: row;
+        display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 0;
-        margin-bottom: 2rem;
+        text-align: center;
+        gap: 0.5rem;
+        margin-bottom: 4rem; /* More space for the editorial year */
+    }
+
+    .title-lockup {
+        align-items: center;
+        margin-bottom: 1rem;
     }
 
     .mobile-menu-toggle {
@@ -1957,10 +1980,19 @@ body {
 
 @media (max-width: 600px) {
     .stats-panel.active {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 2.5rem;
+        padding: 5rem 2rem;
+        overflow-y: auto;
+    }
+
+    .stats-panel-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-        align-content: center;
+        gap: 2rem;
+        width: 100%;
     }
     
     /* mobile close btn positioning removed */
@@ -2001,10 +2033,15 @@ body {
         margin-bottom: 2.5rem;
     }
 
-    /* Single column calendar */
+    /* Single column calendar - Editorial spacing */
     .calendar-layout {
         grid-template-columns: 1fr;
-        gap: 3rem;
+        gap: 5rem; /* Increased breathing room */
+    }
+
+    .month-card {
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-subtle);
     }
 
     .month-header {
@@ -2046,56 +2083,50 @@ body {
     }
 }
 
-/* Elite PWA Toast System */
+/* Elite PWA: Toast Notifications */
 .pwa-toast {
     position: fixed;
-    bottom: 2rem;
+    bottom: 100px; /* Above bottom nav */
     left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: #1A1A1A;
-    border: 1px solid #333;
-    color: #EAE6DF;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-paper);
+    color: var(--text-ink);
     padding: 0.8rem 1.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
+    border: 1px solid var(--border-subtle);
+    font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     z-index: 5000;
     opacity: 0;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
 .pwa-toast.visible {
-    transform: translateX(-50%) translateY(0);
     opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 .pwa-toast.success {
-    border-color: var(--color-success);
-    color: var(--color-success);
+    border-top: 2px solid var(--color-success);
 }
 
-/* WCO Support */
-body.wco-active .desktop-nav {
-    top: env(titlebar-area-height, 32px);
-    margin-top: 0;
+.pwa-toast.info {
+    border-top: 2px solid var(--color-today);
 }
 
-body.wco-active .app-layout {
-    padding-top: calc(env(titlebar-area-height, 32px) + 60px);
+/* Elite PWA: Window Controls Overlay (WCO) */
+.desktop-nav.wco-active {
+    padding-top: env(titlebar-area-inset-top, 0px);
+    height: calc(var(--nav-height) + env(titlebar-area-inset-top, 0px));
 }
 
-/* Deep Linking Highlight */
-@keyframes pwaHighlightGlow {
-    0% { scale: 1; outline: 0px solid var(--color-success); }
-    50% { scale: 1.1; outline: 4px solid var(--color-success); }
-    100% { scale: 1; outline: 0px solid var(--color-success); }
-}
-
-.pwa-highlight {
-    animation: pwaHighlightGlow 2s ease forwards;
-    z-index: 10;
+@media (max-width: 768px) {
+    .pwa-toast {
+        bottom: 120px; /* Adjust for mobile bottom nav height */
+        width: 90%;
+        text-align: center;
+    }
 }

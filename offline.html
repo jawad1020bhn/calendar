@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connection Interrupted // The Daily Tracker</title>
+    <title>Offline | The Daily Tracker</title>
     <style>
         :root {
             --bg: #181716;
@@ -13,28 +13,21 @@
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: 'Epilogue', sans-serif;
+            font-family: serif;
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
             text-align: center;
+        }
+        .container {
+            max-width: 400px;
             padding: 2rem;
         }
-        .content {
-            max-width: 400px;
-            animation: fadeIn 1.2s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
         h1 {
-            font-family: 'Instrument Serif', serif;
-            font-style: italic;
-            font-weight: 400;
             font-size: 3rem;
+            font-style: italic;
             margin-bottom: 1rem;
         }
         p {
@@ -42,28 +35,28 @@
             line-height: 1.6;
             margin-bottom: 2rem;
         }
-        .btn {
-            display: inline-block;
-            padding: 1rem 2rem;
-            border: 1px solid var(--text);
+        button {
+            background: none;
+            border: 1px solid var(--dim);
             color: var(--text);
-            text-decoration: none;
+            padding: 0.8rem 2rem;
+            cursor: pointer;
+            font-family: sans-serif;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            font-size: 0.8rem;
             transition: all 0.3s ease;
         }
-        .btn:hover {
-            background: var(--text);
-            color: var(--bg);
+        button:hover {
+            border-color: var(--text);
+            background: rgba(255,255,255,0.05);
         }
     </style>
 </head>
 <body>
-    <div class="content">
+    <div class="container">
         <h1>Offline</h1>
-        <p>You are currently disconnected from the wider web. However, your local archival record remains fully accessible and functional.</p>
-        <a href="./index.html" class="btn">Return to Tracker</a>
+        <p>This record is currently resting. Please check your connection to sync historical assets, or continue using the cached app shell.</p>
+        <button onclick="window.location.reload()">Retry Connection</button>
     </div>
 </body>
 </html>
