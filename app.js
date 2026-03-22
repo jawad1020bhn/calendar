@@ -308,12 +308,6 @@ const renderSidebarTagRail = (noteEntries) => {
 
     tagRail.innerHTML = '';
 
-    const allChip = document.createElement('button');
-    allChip.type = 'button';
-    allChip.className = 'sidebar-tag-chip' + (activeNotesTag === 'all' ? ' active' : '');
-    allChip.textContent = 'All';
-    allChip.dataset.tag = 'all';
-    tagRail.appendChild(allChip);
 
     const tagCounts = new Map();
     noteEntries.forEach(([_, text]) => {
@@ -359,15 +353,6 @@ const renderSidebarNotes = () => {
 
     renderSidebarTagRail(noteEntries);
 
-    if (status) {
-        if (noteEntries.length === 0) {
-            status.textContent = 'All inscriptions';
-        } else if (hasActiveFilter) {
-            status.textContent = `Showing ${filteredEntries.length} of ${noteEntries.length}`;
-        } else {
-            status.textContent = `${noteEntries.length} inscription${noteEntries.length === 1 ? '' : 's'}`;
-        }
-    }
 
     if (clearBtn) {
         clearBtn.style.visibility = hasActiveFilter ? 'visible' : 'hidden';
@@ -569,7 +554,19 @@ const importData = (event) => {
 /**
  * Canvas Poster Generation
  */
-const exportPoster = () => {
+/**
+ * Canvas Poster Generation (Refactored for Advanced Options)
+ */
+const exportPoster = (options = {}) => {
+    // Default options
+    const config = {
+        theme: options.theme || 'archival',
+        includeStats: options.includeStats !== undefined ? options.includeStats : true,
+        includeNotes: options.includeNotes !== undefined ? options.includeNotes : true,
+        includeLegend: options.includeLegend !== undefined ? options.includeLegend : true,
+        layout: 'standard' 
+    };
+
     const pCanvas = document.getElementById('poster-canvas');
     if (!pCanvas) return;
     
@@ -581,28 +578,36 @@ const exportPoster = () => {
     
     const pCtx = pCanvas.getContext('2d');
     
-    // Theming for poster (Archival dark theme by default for premium look)
-    const bgColor = '#181716';
-    const textColor = '#EAE6DF';
-    const dimColor = '#88837C';
-    const subBorderColor = '#2F2E2C';
-    const successColor = '#205E41';
-    const failColor = '#D64235';
-    const neutralColor = '#242220';
+    // Theming profiles
+    const themes = {
+        archival: {
+            bg: '#181716', text: '#EAE6DF', dim: '#88837C', border: '#2F2E2C',
+            success: '#205E41', fail: '#D64235', neutral: '#242220'
+        },
+        gallery: {
+            bg: '#FFFFFF', text: '#1A1A1A', dim: '#999999', border: '#EEEEEE',
+            success: '#217346', fail: '#A4262C', neutral: '#F3F2F1'
+        },
+        solstice: {
+            bg: '#163020', text: '#D4AF37', dim: '#8F9779', border: '#2D4B37',
+            success: '#D4AF37', fail: '#C0392B', neutral: '#1F402B'
+        }
+    };
+
+    const t = themes[config.theme] || themes.archival;
 
     // 1. Fill Background
-    pCtx.fillStyle = bgColor;
+    pCtx.fillStyle = t.bg;
     pCtx.fillRect(0, 0, width, height);
     
-    // 2. Add subtle texture (noise simulation via random faint pixels)
-    // Optimization: Draw a tiny rectangle with noise, then tile it.
+    // 2. Add subtle texture (noise simulation)
     const noiseCv = document.createElement('canvas');
     noiseCv.width = 100; noiseCv.height = 100;
     const nCtx = noiseCv.getContext('2d');
     for(let i=0; i<100; i++) {
         for(let j=0; j<100; j++) {
             if(Math.random() > 0.95) {
-                nCtx.fillStyle = 'rgba(255,255,255, 0.03)';
+                nCtx.fillStyle = config.theme === 'gallery' ? 'rgba(0,0,0, 0.02)' : 'rgba(255,255,255, 0.03)';
                 nCtx.fillRect(i, j, 1, 1);
             }
         }
@@ -616,134 +621,159 @@ const exportPoster = () => {
     let cursorY = 300;
     
     pCtx.font = '500 32px Epilogue, sans-serif';
-    pCtx.fillStyle = dimColor;
+    pCtx.fillStyle = t.dim;
     pCtx.fillText('A DAILY RECORD', marginX, cursorY);
     
     cursorY += 150;
     
     pCtx.font = 'italic 400 120px "Instrument Serif", serif';
-    pCtx.fillStyle = dimColor;
+    pCtx.fillStyle = t.dim;
     pCtx.fillText('NO.', marginX, cursorY);
     
     pCtx.font = '400 400px "Instrument Serif", serif';
-    pCtx.fillStyle = textColor;
-    pCtx.fillText(currentYear.toString(), marginX + 220, cursorY + 40); // Baseline adjust
+    pCtx.fillStyle = t.text;
+    pCtx.fillText(currentYear.toString(), marginX + 220, cursorY + 40);
     
     // Line separator
     cursorY += 150;
     pCtx.beginPath();
     pCtx.moveTo(marginX, cursorY);
     pCtx.lineTo(width - marginX, cursorY);
-    pCtx.strokeStyle = subBorderColor;
+    pCtx.strokeStyle = t.border;
     pCtx.lineWidth = 2;
     pCtx.stroke();
     
-    // 4. Draw Calendar Layout (Grid setup)
+    // 4. Draw Calendar Layout
     cursorY += 200;
     
     const cols = 3;
     const colSpacing = 120;
-    const cw = (width - (marginX * 2) - (colSpacing * (cols - 1))) / cols; // cell width per month
-    const cellRadius = cw / 14 - 8; // Based on 7 grid
+    const cw = (width - (marginX * 2) - (colSpacing * (cols - 1))) / cols; 
     
     MONTHS.forEach((monthName, mIndex) => {
         const row = Math.floor(mIndex / cols);
         const col = mIndex % cols;
-        
         const mBaseX = marginX + (col * (cw + colSpacing));
-        const mBaseY = cursorY + (row * 600); // month card height
+        const mBaseY = cursorY + (row * 600);
         
         // Month Header
         pCtx.font = 'italic 400 80px "Instrument Serif", serif';
-        pCtx.fillStyle = textColor;
+        pCtx.fillStyle = t.text;
         pCtx.fillText(monthName, mBaseX, mBaseY);
         
-        const rmText = `NO. ${(mIndex+1).toString().padStart(2, '0')}`;
+        const rmText = `ARCHIVE NO. ${(mIndex+1).toString().padStart(2, '0')}`;
         pCtx.font = '400 24px Epilogue, sans-serif';
-        pCtx.fillStyle = dimColor;
+        pCtx.fillStyle = t.dim;
         pCtx.fillText(rmText, mBaseX + cw - pCtx.measureText(rmText).width, mBaseY);
         
-        // Month HR
-        pCtx.beginPath();
-        pCtx.moveTo(mBaseX, mBaseY + 30);
-        pCtx.lineTo(mBaseX + cw, mBaseY + 30);
-        pCtx.strokeStyle = subBorderColor;
-        pCtx.lineWidth = 1;
-        pCtx.stroke();
+        // Day Grid (7 columns)
+        const cellGap = 12;
+        const dw = (cw - (cellGap * 6)) / 7;
+        const gridYStart = mBaseY + 60;
         
-        // Days loop
-        let gridY = mBaseY + 120;
+        const daysInMonth = new Date(currentYear, mIndex + 1, 0).getDate();
         const firstDay = getFirstDayOfMonth(mIndex, currentYear);
-        const daysInMon = getDaysInMonth(mIndex, currentYear);
-        const totalCells = Math.ceil((firstDay + daysInMon) / 7) * 7;
-        
         const cellSpace = cw / 7;
-        
+
         pCtx.font = '500 22px Epilogue, sans-serif';
         pCtx.textAlign = 'center';
-        
-        for (let i = 0; i < totalCells; i++) {
+
+        for (let i = 0; i < 42; i++) { // Max cells in a month calendar
             const gridRow = Math.floor(i / 7);
             const gridCol = i % 7;
-            
             const cellX = mBaseX + (gridCol * cellSpace) + (cellSpace / 2);
-            const cellY = gridY + (gridRow * cellSpace) + (cellSpace / 2);
+            const cellY = gridYStart + (gridRow * cellSpace) + (cellSpace / 2);
             
-            if (i >= firstDay && i < firstDay + daysInMon) {
+            if (i >= firstDay && i < firstDay + daysInMonth) {
                 const dayNum = i - firstDay + 1;
-                const dateStr = `${currentYear}-${String(mIndex + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                const dateStr = `${currentYear}-${(mIndex+1).toString().padStart(2, '0')}-${dayNum.toString().padStart(2, '0')}`;
+                const state = casesData[dateStr] || 0;
                 
-                // Determine color
-                const state = casesData[dateStr];
-                let cFill = neutralColor;
-                if (state === 1) cFill = successColor;
-                if (state === 2) cFill = failColor;
-                
-                // Draw Cell Circle
                 pCtx.beginPath();
-                pCtx.arc(cellX, cellY, cellRadius, 0, Math.PI * 2);
-                pCtx.fillStyle = cFill;
+                pCtx.arc(cellX, cellY, dw/2, 0, Math.PI * 2);
+                
+                if (state === 1) pCtx.fillStyle = t.success;
+                else if (state === 2) pCtx.fillStyle = t.fail;
+                else pCtx.fillStyle = t.neutral;
+                
                 pCtx.fill();
-                
-                // Draw Day Number
-                pCtx.fillStyle = (state === 1 || state === 2) ? '#fff' : textColor;
-                pCtx.fillText(dayNum, cellX, cellY + 8); // +8 for baseline
-                
-                // Note indicator
-                if (notesData[dateStr]) {
-                    pCtx.fillStyle = failColor;
-                    pCtx.fillText('*', cellX + cellRadius - 6, cellY - cellRadius + 12);
+
+                // Note Indicator
+                if (config.includeNotes && notesData[dateStr]) {
+                    pCtx.beginPath();
+                    pCtx.arc(cellX + dw/2 - 5, cellY - dw/2 + 5, 4, 0, Math.PI * 2);
+                    pCtx.fillStyle = (state === 1 || state === 2) ? '#fff' : t.dim;
+                    pCtx.fill();
                 }
             }
         }
-        pCtx.textAlign = 'left'; // reset
+        pCtx.textAlign = 'left';
     });
 
-    // 6. Draw Footer Metadata
-    cursorY += 120;
-    pCtx.font = '500 24px Epilogue, sans-serif';
-    pCtx.fillStyle = dimColor;
-    pCtx.textAlign = 'center';
-    const stats = calculateStatsValues(); 
-    const bestStreakEl = document.getElementById('best-streak-val');
-    const bestStr = bestStreakEl ? bestStreakEl.textContent : '0';
-    const metaText = `TOTAL CLEAN: ${stats.successCount}  //  LONGEST STREAK: ${bestStr}  //  ISSUED: ${new Date().toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'}).toUpperCase()}`;
-    pCtx.fillText(metaText, width / 2, cursorY);
+    // 5. Draw Info / Legend
+    if (config.includeLegend) {
+        let lx = marginX;
+        let ly = height - 300;
+        
+        pCtx.font = '500 24px Epilogue, sans-serif';
+        pCtx.fillStyle = t.dim;
+        pCtx.fillText('LEGEND', lx, ly - 40);
+        
+        const items = [
+            { label: 'CLEAN', color: t.success },
+            { label: 'RELAPSE', color: t.fail },
+            { label: 'NEUTRAL', color: t.neutral }
+        ];
+        
+        items.forEach(item => {
+            pCtx.beginPath();
+            pCtx.arc(lx + 10, ly + 10, 10, 0, Math.PI * 2);
+            pCtx.fillStyle = item.color;
+            pCtx.fill();
+            
+            pCtx.fillStyle = t.text;
+            pCtx.font = '600 20px Epilogue, sans-serif';
+            pCtx.fillText(item.label, lx + 40, ly + 18);
+            lx += 250;
+        });
+    }
 
-    // 7. Vignette / Archival Print Texture
-    const gradient = pCtx.createRadialGradient(width/2, height/2, height*0.4, width/2, height/2, height*0.8);
-    gradient.addColorStop(0, 'rgba(0,0,0,0)');
-    gradient.addColorStop(1, 'rgba(0,0,0,0.5)');
-    pCtx.fillStyle = gradient;
-    pCtx.fillRect(0, 0, width, height);
+    // 6. Draw Summary Statistics
+    if (config.includeStats) {
+        const statsValues = calculateStatsValues(); 
+        const bestStreakEl = document.getElementById('best-streak-val');
+        const bestStr = bestStreakEl ? bestStreakEl.textContent : '0';
 
-    // Trigger download
+        let sx = width - marginX - 550;
+        let sy = height - 450;
+
+        pCtx.font = 'italic 400 60px "Instrument Serif", serif';
+        pCtx.fillStyle = t.text;
+        pCtx.fillText(`${bestStr} DAYS UNBROKEN`, sx, sy);
+        
+        sy += 80;
+        pCtx.font = '500 24px Epilogue, sans-serif';
+        pCtx.fillStyle = t.dim;
+        pCtx.fillText(`TOTAL CLEAN: ${statsValues.successCount}`, sx, sy);
+        
+        sy += 40;
+        const winRate = statsValues.totalInputs > 0 ? (statsValues.successCount / statsValues.totalInputs * 100).toFixed(1) : '0';
+        pCtx.fillText(`SUCCESS RATE: ${winRate}%`, sx, sy);
+    }
+
+    // 7. Colophon
+    pCtx.font = 'italic 400 32px "Instrument Serif", serif';
+    pCtx.fillStyle = t.dim;
+    const colophonText = `GENERATED ON THE ARCHIVAL RECORD OF ${currentYear}.`;
+    pCtx.fillText(colophonText, marginX, height - 100);
+
+    // Save and download using Blob for better compatibility
     pCanvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Archival_Record_${currentYear}.png`;
-        a.click();
+        const link = document.createElement('a');
+        link.download = `archive_record_${currentYear}_${config.theme}.png`;
+        link.href = url;
+        link.click();
         URL.revokeObjectURL(url);
     }, 'image/png', 1.0);
 };
@@ -1612,13 +1642,88 @@ const attachEventListeners = () => {
         navThemeToggle.addEventListener('click', toggleTheme);
     }
     
+    // Advanced Poster Configuration Controller
+    const setupPosterConfig = () => {
+        const modal = document.getElementById('poster-modal');
+        const xBtn = document.getElementById('poster-x-close');
+        const generateBtn = document.getElementById('poster-generate-btn');
+        const previewCard = document.getElementById('poster-preview-card');
+        
+        const includeStatsCheck = document.getElementById('config-include-stats');
+        const includeNotesCheck = document.getElementById('config-include-notes');
+        const includeLegendCheck = document.getElementById('config-include-legend');
+        const themeSegments = document.querySelectorAll('#config-theme-segments .segment-btn');
+
+        let currentTheme = 'archival';
+
+        const updatePreview = () => {
+            if (!includeStatsCheck.checked) {
+                previewCard.classList.add('config-include-stats-hidden');
+            } else {
+                previewCard.classList.remove('config-include-stats-hidden');
+            }
+
+            previewCard.classList.remove('theme-gallery', 'theme-solstice');
+            if (currentTheme === 'gallery') previewCard.classList.add('theme-gallery');
+            if (currentTheme === 'solstice') previewCard.classList.add('theme-solstice');
+        };
+
+        const openModal = () => {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            updatePreview();
+        };
+
+        const closeModal = () => {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        if (xBtn) xBtn.addEventListener('click', closeModal);
+        
+        themeSegments.forEach(btn => {
+            btn.addEventListener('click', () => {
+                themeSegments.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTheme = btn.dataset.value;
+                updatePreview();
+            });
+        });
+
+        [includeStatsCheck, includeNotesCheck, includeLegendCheck].forEach(chk => {
+            if (chk) chk.addEventListener('change', updatePreview);
+        });
+
+        if (generateBtn) {
+            generateBtn.addEventListener('click', () => {
+                const options = {
+                    theme: currentTheme,
+                    includeStats: includeStatsCheck.checked,
+                    includeNotes: includeNotesCheck.checked,
+                    includeLegend: includeLegendCheck.checked
+                };
+                
+                generateBtn.textContent = 'GENERATING ARCHIVE...';
+                generateBtn.disabled = true;
+
+                setTimeout(() => {
+                    exportPoster(options);
+                    generateBtn.textContent = 'GENERATE & DOWNLOAD';
+                    generateBtn.disabled = false;
+                    closeModal();
+                }, 500);
+            });
+        }
+
+        return { openModal };
+    };
+
+    const posterConfig = setupPosterConfig();
+
     if (navExportPoster) {
-        navExportPoster.addEventListener('click', () => {
-            navExportPoster.textContent = 'Generating...';
-            setTimeout(() => {
-                exportPoster();
-                navExportPoster.textContent = 'Save Poster';
-            }, 100);
+        navExportPoster.addEventListener('click', (e) => {
+            e.preventDefault();
+            posterConfig.openModal();
         });
     }
 

@@ -91,7 +91,11 @@
                     </div>
 
                     <div class="distribution-panel" id="distribution-panel">
-                        <span class="stat-label">TEMPORAL DISTRIBUTION</span>
+                        <span class="stat-label">
+                            TEMPORAL DISTRIBUTION
+                            <span class="help-icon"
+                                data-tooltip="Distribution of your entries by day of the week. Higher bars reflect more activity on that day.">?</span>
+                        </span>
                         <div class="dist-grid" id="dist-grid">
                             <!-- Populated by JS -->
                         </div>
@@ -155,7 +159,6 @@
                         placeholder="Search notes or #tags">
                 </label>
                 <div class="sidebar-filter-bar">
-                    <span class="sidebar-filter-status" id="sidebar-filter-status">All inscriptions</span>
                     <button class="sidebar-clear-btn" id="sidebar-clear-filters" type="button">Clear</button>
                 </div>
                 <div class="sidebar-tag-rail" id="sidebar-tag-rail">
@@ -221,6 +224,61 @@
     <!-- Hidden Canvas used for high-res Poster rendering -->
     <canvas id="poster-canvas" style="display: none;"></canvas>
 
+    <!-- Poster Configuration Modal (Advanced) -->
+    <div class="modal-overlay" id="poster-modal">
+        <div class="margin-modal poster-config-content">
+            <button class="modal-x" id="poster-x-close" aria-label="Close Modal">&times;</button>
+            <div class="modal-header">Export Archetype</div>
+            <div class="modal-body">
+                <div class="poster-preview-card" id="poster-preview-card">
+                    <div class="preview-mini-header">ARCHIVE 2026</div>
+                    <div class="preview-mini-grid">
+                        <div class="p-dot"></div><div class="p-dot"></div><div class="p-dot"></div>
+                        <div class="p-dot success"></div><div class="p-dot success"></div><div class="p-dot"></div>
+                        <div class="p-dot"></div><div class="p-dot fail"></div><div class="p-dot"></div>
+                    </div>
+                    <div class="preview-mini-stats" id="preview-mini-stats">
+                        <div class="p-bar"></div>
+                        <div class="p-bar"></div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <span class="config-label">Composition</span>
+                    <div class="config-toggles">
+                        <label class="config-toggle-item">
+                            <input type="checkbox" id="config-include-stats" checked>
+                            <span class="toggle-track"></span>
+                            <span class="toggle-text">Summary Statistics</span>
+                        </label>
+                        <label class="config-toggle-item">
+                            <input type="checkbox" id="config-include-notes" checked>
+                            <span class="toggle-track"></span>
+                            <span class="toggle-text">Note Indicators</span>
+                        </label>
+                        <label class="config-toggle-item">
+                            <input type="checkbox" id="config-include-legend" checked>
+                            <span class="toggle-track"></span>
+                            <span class="toggle-text">Color Legend</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <span class="config-label">Visual Archetype</span>
+                    <div class="config-segments" id="config-theme-segments">
+                        <button class="segment-btn active" data-value="archival">Archival</button>
+                        <button class="segment-btn" data-value="gallery">Gallery</button>
+                        <button class="segment-btn" data-value="solstice">Solstice</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn primary" id="poster-generate-btn">GENERATE & DOWNLOAD</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Premium Editorial Onboarding Overlay -->
     <div class="modal-overlay" id="onboarding-overlay">
         <div class="onboarding-carousel" id="onboarding-carousel">
@@ -228,7 +286,8 @@
             <div class="onboarding-slide active" data-index="0">
                 <div class="onboard-tag">Archive NO. 01</div>
                 <h2 class="onboarding-title">THE<br>ARCHIVAL<br>TRACKER.</h2>
-                <p class="onboarding-sub">A beautiful record of your journey. No data leaves this device. Minimalist. Private. Yours.</p>
+                <p class="onboarding-sub">A beautiful record of your journey. No data leaves this device. Minimalist.
+                    Private. Yours.</p>
                 <div class="onboarding-footer">
                     <button class="onboarding-next-btn">CONTINUE &rarr;</button>
                 </div>
@@ -260,7 +319,8 @@
                 <div class="onboarding-feature-grid">
                     <div class="feature-item wide">
                         <span class="feature-key">DOUBLE TAP</span>
-                        <span class="feature-desc">Open the margin to inscribe your thoughts, tags, or feelings for that specific day.</span>
+                        <span class="feature-desc">Open the margin to inscribe your thoughts, tags, or feelings for that
+                            specific day.</span>
                     </div>
                 </div>
                 <div class="onboarding-footer">
@@ -272,13 +332,14 @@
             <div class="onboarding-slide" data-index="3">
                 <div class="onboard-tag">Record</div>
                 <h2 class="onboarding-title">YOUR LEGACY,<br>EXPORTED.</h2>
-                <p class="onboarding-sub">Generate stunning, high-resolution archival posters of your progress to save or share.</p>
+                <p class="onboarding-sub">Generate stunning, high-resolution archival posters of your progress to save
+                    or share.</p>
                 <div class="onboarding-footer">
                     <button class="onboarding-start-btn" id="onboarding-start-btn">BEGIN RECORDING</button>
                     <button class="onboarding-skip-btn" id="onboarding-skip-btn">Or Skip All</button>
                 </div>
             </div>
-            
+
             <div class="onboarding-pagination" id="onboarding-pagination">
                 <span class="dot active"></span>
                 <span class="dot"></span>
