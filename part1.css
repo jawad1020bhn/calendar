@@ -1,0 +1,189 @@
+/* ==========================================================================
+   DESIGN SYSTEM: KINETIC MINIMALIST STUDIO
+   ========================================================================== */
+
+:root {
+    /* Glass & Obsidian Base */
+    --bg-base: #060608;
+    --bg-surface: rgba(255, 255, 255, 0.03);
+    --bg-surface-hover: rgba(255, 255, 255, 0.06);
+    --border-glass: rgba(255, 255, 255, 0.06);
+    --border-strong: rgba(255, 255, 255, 0.12);
+    
+    /* Typography Colors */
+    --text-primary: #FFFFFF;
+    --text-dim: #94A3B8;
+    --text-on-color: #FFFFFF;
+
+    /* Semantic Accents (Neon & Bold) */
+    --color-success: #10B981;
+    --color-success-hover: #059669;
+    --color-success-glow: rgba(16, 185, 129, 0.3);
+    
+    --color-fail: #F43F5E;
+    --color-fail-hover: #E11D48;
+    --color-fail-glow: rgba(244, 63, 94, 0.3);
+
+    --color-neutral: rgba(255, 255, 255, 0.03);
+    --color-today: #38BDF8;
+    --color-hover: rgba(255, 255, 255, 0.1);
+
+    /* Typography System */
+    --font-display: 'Bricolage Grotesque', sans-serif;
+    --font-mono: 'Chivo Mono', monospace;
+    --font-ui: 'Manrope', sans-serif;
+
+    /* Metrics & Rhythm */
+    --spacing-unit: 1rem;
+    --nav-height: 4rem;
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-pill: 9999px;
+    --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    
+    --shadow-glass: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme="light"] {
+    --bg-base: #F8FAFC;
+    --bg-surface: rgba(255, 255, 255, 0.6);
+    --bg-surface-hover: rgba(255, 255, 255, 0.9);
+    --border-glass: rgba(0, 0, 0, 0.06);
+    --border-strong: rgba(0, 0, 0, 0.12);
+    
+    --text-primary: #0F172A;
+    --text-dim: #64748B;
+    
+    --color-success: #059669;
+    --color-success-glow: rgba(5, 150, 105, 0.2);
+    --color-fail: #E11D48;
+    --color-fail-glow: rgba(225, 29, 72, 0.2);
+    --color-neutral: rgba(0, 0, 0, 0.04);
+    --color-today: #0284C7;
+    --color-hover: rgba(0, 0, 0, 0.08);
+
+    --shadow-glass: 0 16px 40px rgba(0, 0, 0, 0.06);
+}
+
+/* Base & Reset */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+}
+
+/* Kinetic Animated Orbs */
+body::before, body::after {
+    content: ''; position: fixed;
+    width: 50vw; height: 50vh;
+    border-radius: 50%;
+    filter: blur(140px);
+    z-index: -1;
+    opacity: 0.15;
+    animation: drift 20s infinite alternate ease-in-out;
+    pointer-events: none;
+}
+body::before {
+    top: -10%; left: -10%;
+    background: var(--color-today);
+}
+body::after {
+    bottom: -10%; right: -10%;
+    background: var(--color-fail);
+    animation-delay: -10s;
+}
+
+@keyframes drift {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(15vw, 15vh) scale(1.3); }
+}
+
+/* Texture Overlay */
+.texture-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    pointer-events: none; opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* WCO Title Bar */
+.title-bar-overlay {
+    display: none; position: fixed; top: 0; left: env(titlebar-area-x, 0);
+    width: env(titlebar-area-width, 100%); height: env(titlebar-area-height, 33px);
+    z-index: 10000; -webkit-app-region: drag; app-region: drag;
+    align-items: center; padding-left: 1rem;
+}
+@media (display-mode: window-controls-overlay) {
+    .title-bar-overlay { display: flex; }
+}
+
+/* Desktop Navigation (Floating Pill) */
+.desktop-nav {
+    position: sticky; top: 2rem; z-index: 1100;
+    width: fit-content; margin: 0 auto;
+    background: var(--bg-surface);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-pill);
+    padding: 0.75rem 2rem;
+    box-shadow: var(--shadow-glass);
+    transition: transform 0.4s ease;
+}
+.desktop-nav-inner {
+    display: flex; align-items: center; gap: 4rem;
+}
+.nav-brand {
+    font-family: var(--font-display); font-size: 1.1rem; font-weight: 800;
+    letter-spacing: -0.02em; color: var(--text-primary); text-transform: uppercase;
+}
+.nav-links {
+    display: flex; gap: 2rem; align-items: center;
+}
+.nav-link {
+    background: none; border: none; font-family: var(--font-mono); font-size: 0.75rem;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-dim); cursor: pointer; transition: color 0.3s;
+}
+.nav-link:hover { color: var(--text-primary); }
+
+/* Layout container */
+.app-layout {
+    display: flex; max-width: 1800px; margin: 0 auto; gap: 2rem;
+    align-items: flex-start;
+}
+.page-container {
+    width: 100%; flex: 1; padding: 4rem 3rem 8rem 3rem; min-width: 0;
+}
+
+/* Masthead styling */
+.masthead {
+    display: flex; flex-direction: column; align-items: flex-start;
+    gap: 2rem; margin-bottom: 6rem; position: relative;
+}
+.title-lockup {
+    display: flex; flex-direction: column;
+}
+.eyebrow {
+    font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.25em; color: var(--color-today);
+    margin-bottom: 1rem;
+}
+.logo {
+    font-family: var(--font-display); font-size: clamp(4rem, 15vw, 12rem);
+    font-weight: 800; line-height: 0.8; letter-spacing: -0.04em; margin: 0;
+    color: var(--text-primary);
+}
+.year-prefix {
+    font-size: 0.4em; font-weight: 600; font-family: var(--font-mono);
+    color: var(--text-dim); vertical-align: top; margin-right: 0.5rem; letter-spacing: 0;
+}
+
+.header-divider { display: none; }
+.mobile-menu-toggle { display: none; }

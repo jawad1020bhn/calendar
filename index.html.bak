@@ -13,10 +13,12 @@
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23181716'/%3E%3Ccircle cx='50' cy='50' r='28' fill='none' stroke='%23EAE6DF' stroke-width='4'/%3E%3C/svg%3E"
         type="image/svg+xml">
 
-    <!-- Editorial Typography: Cormorant Garamond, DM Mono, Outfit -->
+    <!-- Editorial Typography: Instrument Serif & Epilogue -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Epilogue:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
+        rel="stylesheet">
 
     <!-- PWA Settings -->
     <link rel="manifest" href="manifest.json">
@@ -35,17 +37,17 @@
         <span class="title-bar-text">The Daily Tracker</span>
     </div>
 
-    <div class="texture-overlay"></div>
+    <div class="texture-overlay" aria-hidden="true"></div>
 
     <!-- Desktop Navigation Bar -->
-    <nav class="desktop-nav" id="desktop-nav">
+    <nav class="desktop-nav" id="desktop-nav" aria-label="Main navigation">
         <div class="desktop-nav-inner">
-            <span class="nav-brand">THE DAILY TRACKER </span>
+            <span class="nav-brand">THE DAILY TRACKER</span>
             <div class="nav-links">
-                <button type="button" class="nav-link" id="nav-jump-today">Today</button>
-                <button type="button" class="nav-link" id="nav-toggle-notes">Notes</button>
-                <button class="nav-link" id="nav-theme-toggle">Light Mode</button>
-                <button class="nav-link" id="nav-export-poster">Save Poster</button>
+                <a href="#" class="nav-link" id="nav-jump-today">Today</a>
+                <a href="#" class="nav-link" id="nav-toggle-notes">Notes</a>
+                <button class="nav-link" id="nav-theme-toggle" type="button" aria-label="Toggle light and dark mode">Light Mode</button>
+                <button class="nav-link" id="nav-export-poster" type="button">Save Poster</button>
             </div>
         </div>
     </nav>
@@ -54,23 +56,22 @@
         <main class="page-container">
             <header class="masthead">
                 <div class="title-lockup">
-                    <span class="eyebrow">VOL. I &mdash; YEARLY RECORD</span>
+                    <span class="eyebrow" aria-hidden="true"></span>
                     <h1 class="logo">
-                        <span id="current-year" class="year-main">2026</span>
+                        <span class="year-prefix">NO.</span><span id="current-year" class="year-main">2026</span>
                     </h1>
-                    <span class="logo-accent">A Private Chronicle of Time</span>
                 </div>
 
-                <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle Menu">
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle Stats Panel" aria-expanded="false" type="button">
                     <span class="line line-1"></span>
                     <span class="line line-2"></span>
                     <span class="line line-3"></span>
                 </button>
 
-                <div class="header-divider"></div>
+                <div class="header-divider" aria-hidden="true"></div>
 
-                <div class="stats-panel">
-                    <button class="modal-x" id="stats-x-close" aria-label="Close Stats">&times;</button>
+                <div class="stats-panel" id="stats-panel" role="region" aria-label="Statistics">
+                    <button class="modal-x" id="stats-x-close" aria-label="Close Stats" type="button">&times;</button>
 
                     <div class="stats-panel-grid">
                         <div class="stat-block">
@@ -94,8 +95,9 @@
                     <div class="distribution-panel" id="distribution-panel">
                         <span class="stat-label">
                             TEMPORAL DISTRIBUTION
-                            <span class="help-icon"
-                                data-tooltip="Distribution of your entries by day of the week. Higher bars reflect more activity on that day.">?</span>
+                            <span class="help-icon" role="tooltip"
+                                data-tooltip="Distribution of your entries by day of the week. Higher bars reflect more activity on that day."
+                                aria-label="Distribution info">?</span>
                         </span>
                         <div class="dist-grid" id="dist-grid">
                             <!-- Populated by JS -->
@@ -105,49 +107,50 @@
                     <div class="actions-container">
                         <div class="sparkline-wrapper" data-tooltip="Last 30 Days">
                             <span class="sparkline-label">Momentum — 30 Day Window</span>
-                            <canvas id="sparkline-canvas" class="sparkline-canvas" width="280" height="60"></canvas>
+                            <canvas id="sparkline-canvas" class="sparkline-canvas" width="280" height="60"
+                                aria-label="Sparkline chart showing last 30 days momentum" role="img"></canvas>
                         </div>
 
                         <div class="actions">
-                            <button class="text-btn" id="undo-btn">Retract Last Mark</button>
-                            <button class="text-btn" id="share-btn">Save Poster</button>
-                            <button class="text-btn" id="export-btn">Archive to File</button>
-                            <label for="import-file" class="text-btn" id="import-btn">Restore from File</label>
+                            <button class="text-btn" id="undo-btn" type="button">Retract Last Mark</button>
+                            <button class="text-btn" id="share-btn" type="button">Save Poster</button>
+                            <button class="text-btn" id="export-btn" type="button">Archive to File</button>
+                            <label for="import-file" class="text-btn" id="import-btn" role="button" tabindex="0">Restore from File</label>
                             <input type="file" id="import-file" accept=".json" style="display: none;">
-                            <button class="text-btn text-danger" id="reset-btn">Erase All Marks</button>
+                            <button class="text-btn text-danger" id="reset-btn" type="button">Erase All Marks</button>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <div class="legend">
-                <div class="legend-row">
-                    <span class="dot neutral-dot"></span> <span class="legend-text">Unmarked</span>
+            <div class="legend" role="list" aria-label="Color legend">
+                <div class="legend-row" role="listitem">
+                    <span class="dot neutral-dot" aria-hidden="true"></span> <span class="legend-text">Unmarked</span>
                 </div>
-                <div class="legend-row">
-                    <span class="dot success-dot"></span> <span class="legend-text">Clean</span>
+                <div class="legend-row" role="listitem">
+                    <span class="dot success-dot" aria-hidden="true"></span> <span class="legend-text">Clean</span>
                 </div>
-                <div class="legend-row">
-                    <span class="dot fail-dot"></span> <span class="legend-text">Relapse</span>
+                <div class="legend-row" role="listitem">
+                    <span class="dot fail-dot" aria-hidden="true"></span> <span class="legend-text">Relapse</span>
                 </div>
-                <div class="legend-row">
-                    <span class="dot today-dot"></span> <span class="legend-text">Present Day</span>
+                <div class="legend-row" role="listitem">
+                    <span class="dot today-dot" aria-hidden="true"></span> <span class="legend-text">Present Day</span>
                 </div>
             </div>
 
-            <section class="calendar-layout" id="calendar-grid">
+            <section class="calendar-layout" id="calendar-grid" aria-label="Yearly Calendar">
                 <!-- Calendar months will be injected here via JS -->
             </section>
 
-            <footer class="colophon footer-note">
+            <footer class="colophon">
                 <p>All marks are yours alone. Nothing leaves this device. Tap a day to mark it — double-tap to leave a
                     note in the margin.</p>
             </footer>
         </main>
 
         <!-- Desktop Notes Sidebar / Mobile Notes Overlay -->
-        <aside class="notes-sidebar" id="notes-sidebar">
-            <button class="modal-x" id="notes-x-close" aria-label="Close Notes">&times;</button>
+        <aside class="notes-sidebar" id="notes-sidebar" role="complementary" aria-label="Notes panel">
+            <button class="modal-x" id="notes-x-close" aria-label="Close Notes" type="button">&times;</button>
             <div class="sidebar-header">
                 <h2 class="sidebar-title">Notes</h2>
                 <span class="sidebar-sub">Notes from the record</span>
@@ -157,25 +160,25 @@
                 <label class="sidebar-search-wrap" for="sidebar-search">
                     <span class="sidebar-search-label">Search the archive</span>
                     <input type="search" id="sidebar-search" class="sidebar-search-input"
-                        placeholder="Search notes or #tags">
+                        placeholder="Search notes or #tags" autocomplete="off">
                 </label>
                 <div class="sidebar-filter-bar">
                     <button class="sidebar-clear-btn" id="sidebar-clear-filters" type="button">Clear</button>
                 </div>
-                <div class="sidebar-tag-rail" id="sidebar-tag-rail">
+                <div class="sidebar-tag-rail" id="sidebar-tag-rail" role="list" aria-label="Tag filters">
                     <!-- Populated by JS -->
                 </div>
             </div>
 
-            <button class="sidebar-fab" id="sidebar-write-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="sidebar-fab" id="sidebar-write-btn" type="button" aria-label="Write a note for today">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path d="M12 20h9" />
                     <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
                 </svg>
                 <span>Log Today</span>
             </button>
 
-            <div class="sidebar-notes-list" id="sidebar-notes-list">
+            <div class="sidebar-notes-list" id="sidebar-notes-list" role="list" aria-label="Notes list">
                 <!-- Populated by JS -->
             </div>
             <div class="sidebar-empty" id="sidebar-empty">
@@ -186,57 +189,64 @@
     </div>
 
     <!-- Margin Note Modal -->
-    <div class="modal-overlay" id="note-modal">
+    <div class="modal-overlay" id="note-modal" role="dialog" aria-modal="true" aria-labelledby="modal-date-title">
         <div class="margin-modal">
-            <button class="modal-x" id="modal-x-close" aria-label="Close Modal">&times;</button>
+            <button class="modal-x" id="modal-x-close" aria-label="Close Modal" type="button">&times;</button>
             <div class="modal-header" id="modal-date-title">March 17, 2026</div>
             <div class="modal-body">
-                <div class="note-suggestions" id="note-suggestions">
-                    <button class="suggestion-pill" data-value="Stress">Stress</button>
-                    <button class="suggestion-pill" data-value="Boredom">Boredom</button>
-                    <button class="suggestion-pill" data-value="Social Media">Social Media</button>
-                    <button class="suggestion-pill" data-value="Insomnia">Insomnia</button>
-                    <button class="suggestion-pill" data-value="Hangover">Hangover</button>
+                <div class="note-suggestions" id="note-suggestions" role="group" aria-label="Quick note suggestions">
+                    <button class="suggestion-pill" data-value="Stress" type="button">Stress</button>
+                    <button class="suggestion-pill" data-value="Boredom" type="button">Boredom</button>
+                    <button class="suggestion-pill" data-value="Social Media" type="button">Social Media</button>
+                    <button class="suggestion-pill" data-value="Insomnia" type="button">Insomnia</button>
+                    <button class="suggestion-pill" data-value="Hangover" type="button">Hangover</button>
                 </div>
-                <textarea id="note-textarea" placeholder="What happened today? A single sentence is enough."></textarea>
+                <textarea id="note-textarea" placeholder="What happened today? A single sentence is enough."
+                    aria-label="Note text"></textarea>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn primary" id="modal-save-btn">Inscribe</button>
+                <button class="modal-btn primary" id="modal-save-btn" type="button">Inscribe</button>
             </div>
         </div>
     </div>
 
-    <!-- Auto-Fill Confirmation Modal (Minimalist/Brutalist) -->
-    <div class="modal-overlay" id="autofill-modal">
+    <!-- Auto-Fill Confirmation Modal -->
+    <div class="modal-overlay" id="autofill-modal" role="dialog" aria-modal="true" aria-labelledby="autofill-header">
         <div class="margin-modal autofill-modal-content">
-            <button class="modal-x" id="autofill-x-close" aria-label="Close Modal">&times;</button>
-            <div class="modal-header">Sequence</div>
+            <button class="modal-x" id="autofill-x-close" aria-label="Close Modal" type="button">&times;</button>
+            <div class="modal-header" id="autofill-header">Sequence</div>
             <div class="modal-body autofill-minimal-body">
-                <div class="autofill-huge-stat" id="autofill-huge-stat">5</div>
+                <div class="autofill-huge-stat" id="autofill-huge-stat" aria-live="polite">5</div>
                 <div class="autofill-stat-label">Days to fill</div>
                 <div class="autofill-target-state" id="autofill-target-state">Complete</div>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn primary" id="autofill-confirm-btn">Apply</button>
+                <button class="modal-btn primary" id="autofill-confirm-btn" type="button">Apply</button>
             </div>
         </div>
     </div>
 
     <!-- Hidden Canvas used for high-res Poster rendering -->
-    <canvas id="poster-canvas" style="display: none;"></canvas>
+    <canvas id="poster-canvas" style="display: none;" aria-hidden="true"></canvas>
 
-    <!-- Poster Configuration Modal (Advanced) -->
-    <div class="modal-overlay" id="poster-modal">
+    <!-- Poster Configuration Modal -->
+    <div class="modal-overlay" id="poster-modal" role="dialog" aria-modal="true" aria-labelledby="poster-header">
         <div class="margin-modal poster-config-content">
-            <button class="modal-x" id="poster-x-close" aria-label="Close Modal">&times;</button>
-            <div class="modal-header">Export Archetype</div>
+            <button class="modal-x" id="poster-x-close" aria-label="Close Modal" type="button">&times;</button>
+            <div class="modal-header" id="poster-header">Export Archetype</div>
             <div class="modal-body">
                 <div class="poster-preview-card" id="poster-preview-card">
                     <div class="preview-mini-header">ARCHIVE 2026</div>
-                    <div class="preview-mini-grid">
-                        <div class="p-dot"></div><div class="p-dot"></div><div class="p-dot"></div>
-                        <div class="p-dot success"></div><div class="p-dot success"></div><div class="p-dot"></div>
-                        <div class="p-dot"></div><div class="p-dot fail"></div><div class="p-dot"></div>
+                    <div class="preview-mini-grid" aria-hidden="true">
+                        <div class="p-dot"></div>
+                        <div class="p-dot"></div>
+                        <div class="p-dot"></div>
+                        <div class="p-dot success"></div>
+                        <div class="p-dot success"></div>
+                        <div class="p-dot"></div>
+                        <div class="p-dot"></div>
+                        <div class="p-dot fail"></div>
+                        <div class="p-dot"></div>
                     </div>
                     <div class="preview-mini-stats" id="preview-mini-stats">
                         <div class="p-bar"></div>
@@ -245,43 +255,43 @@
                 </div>
 
                 <div class="config-section">
-                    <span class="config-label">Composition</span>
-                    <div class="config-toggles">
+                    <span class="config-label" id="composition-label">Composition</span>
+                    <div class="config-toggles" role="group" aria-labelledby="composition-label">
                         <label class="config-toggle-item">
                             <input type="checkbox" id="config-include-stats" checked>
-                            <span class="toggle-track"></span>
+                            <span class="toggle-track" aria-hidden="true"></span>
                             <span class="toggle-text">Summary Statistics</span>
                         </label>
                         <label class="config-toggle-item">
                             <input type="checkbox" id="config-include-notes" checked>
-                            <span class="toggle-track"></span>
+                            <span class="toggle-track" aria-hidden="true"></span>
                             <span class="toggle-text">Note Indicators</span>
                         </label>
                         <label class="config-toggle-item">
                             <input type="checkbox" id="config-include-legend" checked>
-                            <span class="toggle-track"></span>
+                            <span class="toggle-track" aria-hidden="true"></span>
                             <span class="toggle-text">Color Legend</span>
                         </label>
                     </div>
                 </div>
 
                 <div class="config-section">
-                    <span class="config-label">Visual Archetype</span>
-                    <div class="config-segments" id="config-theme-segments">
-                        <button class="segment-btn active" data-value="archival">Archival</button>
-                        <button class="segment-btn" data-value="gallery">Gallery</button>
-                        <button class="segment-btn" data-value="solstice">Solstice</button>
+                    <span class="config-label" id="archetype-label">Visual Archetype</span>
+                    <div class="config-segments" id="config-theme-segments" role="group" aria-labelledby="archetype-label">
+                        <button class="segment-btn active" data-value="archival" type="button">Archival</button>
+                        <button class="segment-btn" data-value="gallery" type="button">Gallery</button>
+                        <button class="segment-btn" data-value="solstice" type="button">Solstice</button>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="modal-btn primary" id="poster-generate-btn">GENERATE & DOWNLOAD</button>
+                <button class="modal-btn primary" id="poster-generate-btn" type="button">GENERATE & DOWNLOAD</button>
             </div>
         </div>
     </div>
 
-    <!-- Premium Editorial Onboarding Overlay -->
-    <div class="modal-overlay" id="onboarding-overlay">
+    <!-- Onboarding Overlay -->
+    <div class="modal-overlay" id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Welcome tutorial">
         <div class="onboarding-carousel" id="onboarding-carousel">
             <!-- Slide 1: Introduction -->
             <div class="onboarding-slide active" data-index="0">
@@ -290,7 +300,7 @@
                 <p class="onboarding-sub">A beautiful record of your journey. No data leaves this device. Minimalist.
                     Private. Yours.</p>
                 <div class="onboarding-footer">
-                    <button class="onboarding-next-btn">CONTINUE &rarr;</button>
+                    <button class="onboarding-next-btn" type="button">CONTINUE &rarr;</button>
                 </div>
             </div>
 
@@ -309,7 +319,7 @@
                     </div>
                 </div>
                 <div class="onboarding-footer">
-                    <button class="onboarding-next-btn">NEXT &rarr;</button>
+                    <button class="onboarding-next-btn" type="button">NEXT &rarr;</button>
                 </div>
             </div>
 
@@ -320,12 +330,12 @@
                 <div class="onboarding-feature-grid">
                     <div class="feature-item wide">
                         <span class="feature-key">DOUBLE TAP</span>
-                        <span class="feature-desc">Open the margin to inscribe your thoughts, tags, or feelings for that
-                            specific day.</span>
+                        <span class="feature-desc">Open the margin to inscribe your thoughts, tags, or feelings for
+                            that specific day.</span>
                     </div>
                 </div>
                 <div class="onboarding-footer">
-                    <button class="onboarding-next-btn">NEXT &rarr;</button>
+                    <button class="onboarding-next-btn" type="button">NEXT &rarr;</button>
                 </div>
             </div>
 
@@ -336,12 +346,12 @@
                 <p class="onboarding-sub">Generate stunning, high-resolution archival posters of your progress to save
                     or share.</p>
                 <div class="onboarding-footer">
-                    <button class="onboarding-start-btn" id="onboarding-start-btn">BEGIN RECORDING</button>
-                    <button class="onboarding-skip-btn" id="onboarding-skip-btn">Or Skip All</button>
+                    <button class="onboarding-start-btn" id="onboarding-start-btn" type="button">BEGIN RECORDING</button>
+                    <button class="onboarding-skip-btn" id="onboarding-skip-btn" type="button">Or Skip All</button>
                 </div>
             </div>
 
-            <div class="onboarding-pagination" id="onboarding-pagination">
+            <div class="onboarding-pagination" id="onboarding-pagination" aria-hidden="true">
                 <span class="dot active"></span>
                 <span class="dot"></span>
                 <span class="dot"></span>
@@ -351,31 +361,35 @@
     </div>
 
     <!-- Bottom Navigation Bar (mobile only) -->
-    <nav class="bottom-nav" id="bottom-nav">
-        <button class="bnav-item" id="bnav-today" aria-label="Jump to Today">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
+        <button class="bnav-item" id="bnav-today" aria-label="Jump to Today" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
             </svg>
             <span>Today</span>
         </button>
-        <button class="bnav-item" id="bnav-stats" aria-label="Open Stats">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="bnav-item" id="bnav-stats" aria-label="Open Stats" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
                 <rect x="3" y="12" width="4" height="9" />
                 <rect x="10" y="7" width="4" height="14" />
                 <rect x="17" y="3" width="4" height="18" />
             </svg>
             <span>Stats</span>
         </button>
-        <button class="bnav-item" id="bnav-note" aria-label="Open All Notes">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="bnav-item" id="bnav-note" aria-label="Open All Notes" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
                 <path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"></path>
             </svg>
             <span>Notes</span>
         </button>
-        <button class="bnav-item" id="bnav-top" aria-label="Scroll to Top">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="bnav-item" id="bnav-top" aria-label="Scroll to Top" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
                 <polyline points="18 15 12 9 6 15" />
             </svg>
             <span>Top</span>

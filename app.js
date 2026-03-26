@@ -54,6 +54,7 @@ const autofillHugeStat = document.getElementById('autofill-huge-stat');
 const autofillTargetState = document.getElementById('autofill-target-state');
 const autofillCancelBtn = document.getElementById('autofill-x-close');
 const autofillConfirmBtn = document.getElementById('autofill-confirm-btn');
+const autofillStatLabel = document.querySelector('.autofill-stat-label');
 
 // Pending Auto-Fill State
 let pendingAutofill = null; // { gapDates: [], newState: 1|2 }
@@ -411,7 +412,6 @@ const renderSidebarNotes = () => {
     const list = document.getElementById('sidebar-notes-list');
     const empty = document.getElementById('sidebar-empty');
     const searchInput = document.getElementById('sidebar-search');
-    const status = document.getElementById('sidebar-filter-status');
     const clearBtn = document.getElementById('sidebar-clear-filters');
     if (!list || !empty) return;
     
@@ -529,31 +529,15 @@ const saveData = () => {
 /**
  * NATIVE SHARE API
  */
-const shareProgress = async () => {
-    const stats = calculateStatsValues(); // Helper to get current values
-    const text = `I've reached a ${stats.currentStreak} day streak of being clean! Total days clean: ${stats.successCount}. Tracked via The Daily Tracker.`;
-    
-    if (navigator.share) {
-        try {
-            await navigator.share({
-                title: 'The Daily Tracker // Progress Report',
-                text: text,
-                url: window.location.origin
-            });
-        } catch (err) {
-            console.log('Share failed', err);
-        }
-    } else {
-        // Fallback: Copy to clipboard
-        navigator.clipboard.writeText(text);
-        alert('Progress copied to clipboard!');
-    }
-};
+// Removed dead shareProgress block
 
 const calculateStatsValues = () => {
     let successCount = 0;
+    let totalInputs = 0; 
+    
     for (const date in casesData) {
         if (casesData[date] === 1) successCount++;
+        if (casesData[date] === 1 || casesData[date] === 2) totalInputs++;
     }
     
     let currentStreak = 0;
@@ -568,7 +552,7 @@ const calculateStatsValues = () => {
         else { streakActive = false; }
         if (checkDate.getFullYear() < currentYear) streakActive = false;
     }
-    return { successCount, currentStreak };
+    return { successCount, currentStreak, totalInputs }; 
 };
 
 /**
@@ -1025,6 +1009,9 @@ const tryAutoFill = (changedDateStr, newState) => {
     
     // Minimalist modal content
     autofillHugeStat.textContent = gapDates.length;
+    if (autofillStatLabel) {
+        autofillStatLabel.textContent = gapDates.length === 1 ? 'Day to fill' : 'Days to fill';
+    }
     autofillTargetState.textContent = stateLabel;
     
     // Style the state text to match its color
@@ -1092,9 +1079,8 @@ const openNoteModal = (e) => {
     activeNoteDate = cell.getAttribute('data-date');
     if (!activeNoteDate) return;
 
-    const dateObj = new Date(activeNoteDate);
-    // Fix offset
-    dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
+    const dateObj = parseDateStr(activeNoteDate);
+    if (!dateObj) return;
     
     modalTitle.textContent = `${MONTHS[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
     noteTextarea.value = notesData[activeNoteDate] || '';
@@ -1335,8 +1321,8 @@ const updateStats = () => {
     let bestStreak = 0;
     let tempStreak = 0;
     
-    // Sort all tracked dates chronologically to find streaks across the history
-    const allDates = Object.keys(casesData).sort((a,b) => new Date(a) - new Date(b));
+    // Sort all tracked dates chronologically using safe string comparison
+    const allDates = Object.keys(casesData).sort((a, b) => a.localeCompare(b));
     let lastDate = null;
     
     // Day of Week tracking: 0=Sun, 1=Mon, ..., 6=Sat
@@ -1344,8 +1330,8 @@ const updateStats = () => {
 
     for (const dStr of allDates) {
         const state = casesData[dStr];
-        const dObj = new Date(dStr);
-        dObj.setMinutes(dObj.getMinutes() + dObj.getTimezoneOffset());
+        const dObj = parseDateStr(dStr);
+        if (!dObj) continue;
         const dow = dObj.getDay();
 
         if (state === 1) {
@@ -1685,8 +1671,7 @@ const attachEventListeners = () => {
     const navExportPoster = document.getElementById('nav-export-poster');
     
     if (navJumpToday) {
-        navJumpToday.addEventListener('click', (e) => {
-            e.preventDefault();
+        navJumpToday.addEventListener('click', () => {
             const todayCell = document.querySelector('.day-cell.today');
             if (todayCell) {
                 todayCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1702,8 +1687,7 @@ const attachEventListeners = () => {
     }
     
     if (navToggleNotes) {
-        navToggleNotes.addEventListener('click', (e) => {
-            e.preventDefault();
+        navToggleNotes.addEventListener('click', () => {
             const sidebar = document.getElementById('notes-sidebar');
             if (sidebar) {
                 sidebar.classList.toggle('active');
@@ -1779,12 +1763,15 @@ const attachEventListeners = () => {
                 generateBtn.textContent = 'GENERATING ARCHIVE...';
                 generateBtn.disabled = true;
 
-                setTimeout(() => {
-                    exportPoster(options);
-                    generateBtn.textContent = 'GENERATE & DOWNLOAD';
-                    generateBtn.disabled = false;
-                    closeModal();
-                }, 500);
+                // FIX: Ensure fonts are loaded before drawing to canvas
+                document.fonts.ready.then(() => {
+                    setTimeout(() => {
+                        exportPoster(options);
+                        generateBtn.textContent = 'GENERATE & DOWNLOAD';
+                        generateBtn.disabled = false;
+                        closeModal();
+                    }, 500);
+                });
             });
         }
 

@@ -1,79 +1,48 @@
-const CACHE_NAME = 'yearly-tracker-v7';
-const OFFLINE_URL = './offline.html';
-
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './styles.css',
-  './app.js',
-  './manifest.json',
-  OFFLINE_URL
+const CACHE_NAME = 'tracker-cache-v1';
+const urlsToCache = [
+    './',
+    './index.html',
+    './styles.css',
+    './app.js',
+    './manifest.json'
 ];
 
-// Install: pre-cache shell assets
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS_TO_CACHE))
-      .then(() => self.skipWaiting())
-  );
+self.addEventListener('install', event => {
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => {
+                console.log('Opened cache');
+                return cache.addAll(urlsToCache);
+            })
+    );
 });
 
-// Activate: clean old caches
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
-});
-
-// Fetch: Advanced Stale-While-Revalidate strategy
-self.addEventListener('fetch', (event) => {
-  // We only handle GET requests
-  if (event.request.method !== 'GET') return;
-
-  const url = new URL(event.request.url);
-
-  // Strategy for Navigation requests (HTML)
-  if (event.request.mode === 'navigate') {
+self.addEventListener('fetch', event => {
     event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
-          // Update cache with fresh version
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return networkResponse;
-        })
-        .catch(() => {
-          // If network fails, try cache, or fallback to offline page
-          return caches.match(event.request)
-            .then((cachedResponse) => cachedResponse || caches.match(OFFLINE_URL));
+        caches.match(event.request)
+            .then(response => {
+                if (response) {
+                    return response;
+                }
+                return fetch(event.request).catch(() => {
+                    // Fallback for offline mode if resources fail to fetch
+                    console.log('Fetch failed, offline mode engaged');
+                });
+            })
+    );
+});
+
+self.addEventListener('activate', event => {
+    const cacheWhitelist = [CACHE_NAME];
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheWhitelist.indexOf(cacheName) === -1) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
         })
     );
-    return;
-  }
-
-  // Strategy for Assets (CSS, JS, Fonts, Images)
-  // Stale-While-Revalidate: Serve from cache immediately, update in background
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        // Cache valid same-origin responses
-        if (networkResponse.ok && url.origin === self.location.origin) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return networkResponse;
-      }).catch(() => null);
-
-      return cachedResponse || fetchPromise;
-    })
-  );
 });
