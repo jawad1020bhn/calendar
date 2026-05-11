@@ -13,6 +13,18 @@ const ACHIEVEMENTS_KEY = 'cal_achievements';
 const TRIGGERS_DATA_KEY = 'cal_triggers_data';
 const MOOD_DATA_KEY = 'cal_moods_data';
 const MILESTONE_CELEBRATED_KEY = 'cal_milestone_celebrated';
+
+const safeStorage = {
+    getItem(key) {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+    },
+    setItem(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { /* localStorage unavailable */ }
+    },
+    removeItem(key) {
+        try { localStorage.removeItem(key); } catch (e) { /* localStorage unavailable */ }
+    }
+};
 // App State Cache
 let casesData = {};
 let notesData = {};
@@ -168,8 +180,8 @@ const updateYearProgress = () => {
 };
 
 const scrollToCurrentMonth = () => {
-    if (localStorage.getItem('cal_has_visited')) return;
-    localStorage.setItem('cal_has_visited', 'true');
+    if (safeStorage.getItem('cal_has_visited')) return;
+    safeStorage.setItem('cal_has_visited', 'true');
     var monthCards = document.querySelectorAll('.month-card');
     var target = monthCards[new Date().getMonth()];
     if (target) setTimeout(function() { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 600);
@@ -196,6 +208,7 @@ const animateStatsCounters = () => {
 };
 
 const observeStatsSections = () => {
+    if (typeof IntersectionObserver === 'undefined') return;
     var sections = document.querySelectorAll('.stats-panel .stats-section');
     if (!sections.length) return;
     var obs = new IntersectionObserver(function(entries) {
@@ -237,7 +250,7 @@ const syncThemeToggleLabels = (theme) => {
 };
 
 const loadTheme = () => {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+    const savedTheme = safeStorage.getItem(THEME_STORAGE_KEY) || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
     syncThemeToggleLabels(savedTheme);
 };
@@ -308,7 +321,7 @@ const toggleTheme = () => {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     
     document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    safeStorage.setItem(THEME_STORAGE_KEY, newTheme);
     syncThemeToggleLabels(newTheme);
 
     // Swap SVG icon between moon and sun
@@ -419,7 +432,7 @@ const init = () => {
                     overlay.style.display = 'none';
                 }, 1000);
             }
-            localStorage.setItem('cal_onboarded_v1', 'true');
+            safeStorage.setItem('cal_onboarded_v1', 'true');
         };
 
         nextBtns.forEach(btn => {
@@ -435,7 +448,7 @@ const init = () => {
 
         // Initial check for first-time entry
         const hasData = Object.keys(casesData).length > 0;
-        const hasOnboarded = localStorage.getItem('cal_onboarded_v1');
+        const hasOnboarded = safeStorage.getItem('cal_onboarded_v1');
 
         if (!hasData && !hasOnboarded) {
             if (overlay) {
@@ -627,14 +640,14 @@ const renderSidebarNotes = () => {
  * Local Storage Management
  */
 const loadData = () => {
-    const savedCases = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const savedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
-    const savedResetHistory = localStorage.getItem(RESET_HISTORY_KEY);
-    const savedUrges = localStorage.getItem(URGES_DATA_KEY);
-    const savedAchievements = localStorage.getItem(ACHIEVEMENTS_KEY);
-    const savedTriggers = localStorage.getItem(TRIGGERS_DATA_KEY);
-    const savedMoods = localStorage.getItem(MOOD_DATA_KEY);
-    const savedMilestoneCelebrated = localStorage.getItem(MILESTONE_CELEBRATED_KEY);
+    const savedCases = safeStorage.getItem(LOCAL_STORAGE_KEY);
+    const savedNotes = safeStorage.getItem(NOTES_STORAGE_KEY);
+    const savedResetHistory = safeStorage.getItem(RESET_HISTORY_KEY);
+    const savedUrges = safeStorage.getItem(URGES_DATA_KEY);
+    const savedAchievements = safeStorage.getItem(ACHIEVEMENTS_KEY);
+    const savedTriggers = safeStorage.getItem(TRIGGERS_DATA_KEY);
+    const savedMoods = safeStorage.getItem(MOOD_DATA_KEY);
+    const savedMilestoneCelebrated = safeStorage.getItem(MILESTONE_CELEBRATED_KEY);
     
     if (savedCases) {
         try { casesData = JSON.parse(savedCases); } catch (e) { casesData = {}; }
@@ -691,14 +704,14 @@ const checkMilestoneCelebration = () => {
 };
 
 const saveData = () => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(casesData));
-    localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
-    localStorage.setItem(RESET_HISTORY_KEY, JSON.stringify(resetHistory));
-    localStorage.setItem(URGES_DATA_KEY, JSON.stringify(urgesData));
-    localStorage.setItem(TRIGGERS_DATA_KEY, JSON.stringify(triggersData));
-    localStorage.setItem(MOOD_DATA_KEY, JSON.stringify(moodsData));
-    localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(achievements));
-    localStorage.setItem(MILESTONE_CELEBRATED_KEY, JSON.stringify(milestoneCelebrated));
+    safeStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(casesData));
+    safeStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notesData));
+    safeStorage.setItem(RESET_HISTORY_KEY, JSON.stringify(resetHistory));
+    safeStorage.setItem(URGES_DATA_KEY, JSON.stringify(urgesData));
+    safeStorage.setItem(TRIGGERS_DATA_KEY, JSON.stringify(triggersData));
+    safeStorage.setItem(MOOD_DATA_KEY, JSON.stringify(moodsData));
+    safeStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(achievements));
+    safeStorage.setItem(MILESTONE_CELEBRATED_KEY, JSON.stringify(milestoneCelebrated));
     updateStats();
     drawSparkline();
     renderCalendar();
@@ -2094,10 +2107,10 @@ const closeNoteModal = () => {
     const statsPanel = document.querySelector('.stats-panel');
     const sidebar = document.getElementById('notes-sidebar');
     const overlay = document.getElementById('sidebar-overlay');
-    if (!statsPanel.classList.contains('active') && !sidebar.classList.contains('active')) {
+    if (statsPanel && sidebar && !statsPanel.classList.contains('active') && !sidebar.classList.contains('active')) {
         document.body.style.overflow = '';
     }
-    if (!sidebar.classList.contains('active') && overlay) overlay.classList.remove('active');
+    if (sidebar && !sidebar.classList.contains('active') && overlay) overlay.classList.remove('active');
     updateBottomNav();
 };
 
@@ -2697,7 +2710,7 @@ const animateValue = (obj, start, end, duration) => {
  * Global Event Listeners
  */
 const attachEventListeners = () => {
-    resetBtn.addEventListener('click', () => {
+    if (resetBtn) resetBtn.addEventListener('click', () => {
         if(confirm("Are you sure you want to clear ALL tracked data for " + currentYear + "? This cannot be undone.")) {
             casesData = {};
             notesData = {};
@@ -2717,7 +2730,7 @@ const attachEventListeners = () => {
         });
     }
 
-    autofillModal.addEventListener('click', (e) => {
+    if (autofillModal) autofillModal.addEventListener('click', (e) => {
         if (e.target === autofillModal) {
             autofillModal.classList.remove('active');
             pendingAutofill = null;
@@ -2844,14 +2857,14 @@ const attachEventListeners = () => {
         }
     });
     
-    modalCloseBtn.addEventListener('click', closeNoteModal);
+    if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeNoteModal);
 
     // Close note modal on backdrop click
-    noteModal.addEventListener('click', (e) => {
+    if (noteModal) noteModal.addEventListener('click', (e) => {
         if (e.target === noteModal) closeNoteModal();
     });
 
-    modalSaveBtn.addEventListener('click', saveNoteModal);
+    if (modalSaveBtn) modalSaveBtn.addEventListener('click', saveNoteModal);
     
     // Universal X Close Listeners
     const statsXClose = document.getElementById('stats-x-close');
@@ -3057,6 +3070,7 @@ const attachEventListeners = () => {
         };
 
         const openModal = () => {
+            if (!modal) return;
             var currentTitle = titleInput ? titleInput.value : '';
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -3064,12 +3078,13 @@ const attachEventListeners = () => {
         };
 
         const closeModal = () => {
+            if (!modal) return;
             modal.classList.remove('active');
             document.body.style.overflow = '';
         };
 
         if (xBtn) xBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', function(e) {
+        if (modal) modal.addEventListener('click', function(e) {
             if (e.target === modal) closeModal();
         });
 
@@ -3359,9 +3374,9 @@ const attachEventListeners = () => {
     if (bnavStats) {
         bnavStats.addEventListener('click', () => {
             closeAllOverlays();
-            statsPanel.classList.add('active');
-            refreshStatsPanel();
-            statsPanel.scrollTop = 0;
+            if (statsPanel) statsPanel.classList.add('active');
+            if (statsPanel) refreshStatsPanel();
+            if (statsPanel) statsPanel.scrollTop = 0;
             if (navigator.vibrate) navigator.vibrate(20);
             document.body.style.overflow = 'hidden';
             updateBottomNav();

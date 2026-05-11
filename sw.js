@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yearly-record-v3';
+const CACHE_NAME = 'yearly-record-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -34,6 +34,20 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Network-first for JS to always serve latest code
+  if (url.pathname.endsWith('.js')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {

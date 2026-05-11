@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head><body>
+<div id="current-year">2026</div>
+<div id="calendar-grid"></div>
+<div class="stats-panel"></div>
+<div id="reset-btn">Reset</div>
+<div id="modal-x-close">X</div>
+<div id="note-modal"></div>
+<div id="modal-save-btn">Save</div>
+<div id="autofill-modal"></div>
+<div id="autofill-x-close">X</div>
+<div id="autofill-confirm-btn">Confirm</div>
+<div id="poster-modal"></div>
+<div id="poster-preview-card"></div>
+<div id="toast-container"></div>
+<div id="sidebar-notes-list"></div>
+<div id="sidebar-empty"></div>
+<div id="sidebar-overlay"></div>
+<div id="notes-sidebar"></div>
+<div id="sidebar-search"></div>
+<div id="sidebar-tag-rail"></div>
+<div id="sidebar-clear-filters"></div>
+<div id="sidebar-write-btn"></div>
+<div id="nav-jump-today"></div>
+<div id="nav-toggle-notes"></div>
+<div id="nav-toggle-stats"></div>
+<div id="nav-theme-toggle"></div>
+<div id="nav-export-poster"></div>
+<div id="share-btn"></div>
+<div id="stats-x-close"></div>
+<div id="notes-x-close"></div>
+<div id="mood-options"></div>
+<div id="heatmap-modal"></div>
+<div id="heatmap-x-close"></div>
+<div id="heatmap-close-btn"></div>
+<div id="insights-modal"></div>
+<div id="insights-x-close"></div>
+<div id="insights-close-btn"></div>
+<div id="insights-card"></div>
+<div id="bnav-urge"></div>
+<div id="trigger-modal"></div>
+<div id="trigger-x-close"></div>
+<div id="trigger-skip-btn"></div>
+<div id="trigger-confirm-btn"></div>
+<div id="trigger-selection-grid"></div>
+<div id="urge-modal"></div>
+<div id="urge-x-close"></div>
+<div id="urge-save-btn"></div>
+<div id="urge-trigger-grid"></div>
+<div id="trend-modal"></div>
+<div id="trend-x-close"></div>
+<div id="bnav-today"></div>
+<div id="bnav-stats"></div>
+<div id="bnav-note"></div>
+<div id="bnav-top"></div>
+<div id="onboarding-overlay"></div>
+<div id="sidebar-note-list"></div>
+<script>
+window.onerror = function(msg, url, line, col, err) {
+    var d = document.createElement('div');
+    d.style.color = 'red';
+    d.textContent = 'ERROR: ' + msg + ' at line ' + line + ':' + col;
+    document.body.appendChild(d);
+};
+</script>
+<script src="app.js"></script>
+<script>
+setTimeout(function() {
+    var errors = document.querySelectorAll('[style*="color: red"]');
+    if (errors.length === 0) {
+        var d = document.createElement('div');
+        d.style.color = 'green';
+        d.textContent = 'NO ERRORS - init completed';
+        document.body.appendChild(d);
+    }
+    var d2 = document.createElement('div');
+    d2.style.color = 'blue';
+    d2.textContent = 'DOM readyState: ' + document.readyState;
+    document.body.appendChild(d2);
+}, 1000);
+</script>
+</body></html>
