@@ -13,10 +13,10 @@
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23181716'/%3E%3Ccircle cx='50' cy='50' r='28' fill='none' stroke='%23EAE6DF' stroke-width='4'/%3E%3C/svg%3E"
         type="image/svg+xml">
 
-    <!-- Kinetic Studio Typography: Bricolage Grotesque, Chivo Mono, Manrope -->
+    <!-- Editorial Typography: Fraunces · Work Sans · Fragment Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Chivo+Mono:wght@300;400;500;700&family=Manrope:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300;9..144,400;9..144,600;9..144,700;9..144,900,50&family=Work+Sans:wght@300;400;500;600&family=Fragment+Mono:wght@400&display=swap" rel="stylesheet">
 
     <!-- PWA Settings -->
     <link rel="manifest" href="manifest.json">
@@ -30,22 +30,61 @@
 </head>
 
 <body>
+    <a href="#calendar-grid" class="skip-link">Skip to calendar</a>
+
     <!-- Window Controls Overlay Title Bar (Desktop PWA) -->
     <div id="title-bar-overlay" class="title-bar-overlay">
         <span class="title-bar-text">The Daily Tracker</span>
     </div>
+
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="announcements"></div>
 
     <div class="texture-overlay"></div>
 
     <!-- Desktop Navigation Bar -->
     <nav class="desktop-nav" id="desktop-nav">
         <div class="desktop-nav-inner">
-            <span class="nav-brand">THE DAILY TRACKER </span>
+            <span class="nav-brand">
+                <span class="nav-brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+                ARCHIVE
+            </span>
             <div class="nav-links">
-                <button type="button" class="nav-link" id="nav-jump-today">Today</button>
-                <button type="button" class="nav-link" id="nav-toggle-notes">Notes</button>
-                <button class="nav-link" id="nav-theme-toggle">Light Mode</button>
-                <button class="nav-link" id="nav-export-poster">Save Poster</button>
+                <button type="button" class="nav-link ripple" id="nav-jump-today">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    Today
+                </button>
+                <button type="button" class="nav-link ripple" id="nav-toggle-notes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+                    </svg>
+                    Notes
+                </button>
+                <button type="button" class="nav-link ripple" id="nav-toggle-stats">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    Stats
+                </button>
+                <button class="nav-link ripple" id="nav-theme-toggle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                    </svg>
+                    <span id="nav-theme-label">Light Mode</span>
+                </button>
+                <button class="nav-link ripple" id="nav-export-poster">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    Poster
+                </button>
             </div>
         </div>
     </nav>
@@ -53,66 +92,202 @@
     <div class="app-layout">
         <main class="page-container">
             <header class="masthead">
-                <div class="title-lockup">
-                    <div class="title-lockup-left">
-                        <span class="eyebrow">Yearly Record</span>
-                        <h1 class="logo">
-                            <span class="year-prefix">NO.</span><span id="current-year" class="year-main">2026</span>
-                        </h1>
-                    </div>
-                    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle Menu">
-                        <span class="line line-1"></span>
-                        <span class="line line-2"></span>
-                        <span class="line line-3"></span>
-                    </button>
+        <div class="title-lockup">
+            <div class="title-lockup-left">
+                <span class="eyebrow">Yearly Record</span>
+                <h1 class="logo">
+                    <span class="year-prefix">NO.</span><span id="current-year" class="year-main">2026</span>
+                </h1>
+            </div>
+            <div class="masthead-weekly-pattern" id="masthead-weekly-pattern">
+                <div class="dist-grid" id="masthead-dist-grid">
+                    <!-- Populated by JS -->
                 </div>
+            </div>
+        </div>
 
                 <div class="stats-panel">
                     <button class="modal-x" id="stats-x-close" aria-label="Close Stats">&times;</button>
 
-                    <div class="stats-panel-grid">
-                        <div class="stat-block">
-                            <span class="stat-label">Running<br>Streak</span>
-                            <span class="stat-value" id="streak-val">0</span>
-                        </div>
-                        <div class="stat-block">
-                            <span class="stat-label">Longest<br>Streak</span>
-                            <span class="stat-value best-val" id="best-streak-val">0</span>
-                        </div>
-                        <div class="stat-block">
-                            <span class="stat-label">Days<br>Clean</span>
-                            <span class="stat-value success-val" id="success-val">0</span>
-                        </div>
-                        <div class="stat-block">
-                            <span class="stat-label">Days<br>Relapsed</span>
-                            <span class="stat-value fail-val" id="fail-val">0</span>
-                        </div>
-                    </div>
-
-                    <div class="distribution-panel" id="distribution-panel">
-                        <span class="stat-label">
-                            TEMPORAL DISTRIBUTION
-                            <span class="help-icon"
-                                data-tooltip="Distribution of your entries by day of the week. Higher bars reflect more activity on that day.">?</span>
-                        </span>
-                        <div class="dist-grid" id="dist-grid">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-
-                    <div class="actions-container">
-                        <div class="sparkline-wrapper" data-tooltip="Last 30 Days">
-                            <span class="sparkline-label">Momentum — 30 Day Window</span>
-                            <canvas id="sparkline-canvas" class="sparkline-canvas" width="280" height="60"></canvas>
+                    <div class="stats-inner">
+                        <!-- Dashboard Header -->
+                        <div class="stats-header">
+                            <div class="stats-header-left">
+                                <span class="stats-overline">Yearly Record</span>
+                                <h2 class="stats-headline">Dashboard</h2>
+                            </div>
+                            <div class="stats-year-badge">
+                                <span class="stats-year-badge-year" id="stats-current-year">2026</span>
+                                <span class="stats-year-badge-label">RPT</span>
+                            </div>
                         </div>
 
-                        <div class="actions">
-                            <button class="text-btn" id="undo-btn">Retract Last Mark</button>
-                            <button class="text-btn" id="share-btn">Save Poster</button>
-                            <button class="text-btn" id="export-btn">Archive to File</button>
-                            <label for="import-file" class="text-btn" id="import-btn">Restore from File</label>
-                            <input type="file" id="import-file" accept=".json" style="display: none;">
-                            <button class="text-btn text-danger" id="reset-btn">Erase All Marks</button>
+                        <!-- Primary Metric Cards -->
+                        <div class="metrics-grid">
+                            <div class="metric-card metric-card-streak">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                    </svg>
+                                </div>
+                                <div class="metric-body">
+                                    <span class="metric-label">Running Streak</span>
+                                    <div class="metric-value-row">
+                                        <span class="metric-value" id="streak-val">0</span>
+                                        <span class="metric-unit">days</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="metric-card metric-card-best">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="8" r="6"/>
+                                        <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+                                    </svg>
+                                </div>
+                                <div class="metric-body">
+                                    <span class="metric-label">Longest Streak</span>
+                                    <div class="metric-value-row">
+                                        <span class="metric-value" id="best-streak-val">0</span>
+                                        <span class="metric-unit">days</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="metric-card metric-card-clean">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                                        <polyline points="22 4 12 14.01 9 11.01"/>
+                                    </svg>
+                                </div>
+                                <div class="metric-body">
+                                    <span class="metric-label">Days Clean</span>
+                                    <div class="metric-value-row">
+                                        <span class="metric-value success-val" id="success-val">0</span>
+                                        <span class="metric-unit">total</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="metric-card metric-card-relapsed">
+                                <div class="metric-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="15" y1="9" x2="9" y2="15"/>
+                                        <line x1="9" y1="9" x2="15" y2="15"/>
+                                    </svg>
+                                </div>
+                                <div class="metric-body">
+                                    <span class="metric-label">Days Relapsed</span>
+                                    <div class="metric-value-row">
+                                        <span class="metric-value fail-val" id="fail-val">0</span>
+                                        <span class="metric-unit">total</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Year Progress -->
+                        <div class="stats-section">
+                            <div class="stats-section-title">
+                                <span>Year Progress</span>
+                            </div>
+                            <div class="progress-ring-card">
+                                <div class="progress-ring-wrap">
+                                    <svg class="progress-ring-svg" viewBox="0 0 120 120">
+                                        <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
+                                        <circle class="progress-ring-fill" id="progress-ring-fill" cx="60" cy="60" r="52" style="stroke-dasharray: 326.73; stroke-dashoffset: 326.73;"/>
+                                    </svg>
+                                    <div class="progress-ring-center">
+                                        <span class="progress-ring-pct" id="progress-pct">0%</span>
+                                        <span class="progress-ring-sub">elapsed</span>
+                                    </div>
+                                </div>
+                                <div class="progress-stats">
+                                    <div class="progress-stat">
+                                        <span class="progress-stat-val" id="days-tracked">0</span>
+                                        <span class="progress-stat-label">Tracked</span>
+                                    </div>
+                                    <div class="progress-stat-divider"></div>
+                                    <div class="progress-stat">
+                                        <span class="progress-stat-val" id="days-remaining">0</span>
+                                        <span class="progress-stat-label">Remaining</span>
+                                    </div>
+                                    <div class="progress-stat-divider"></div>
+                                    <div class="progress-stat">
+                                        <span class="progress-stat-val success-val" id="success-rate">0%</span>
+                                        <span class="progress-stat-label">Success</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Weekly Pattern (mobile only) -->
+                        <div class="stats-section weekly-pattern-in-stats mobile-only">
+                            <div class="stats-section-title">
+                                <span>Weekly Pattern</span>
+                                <span class="stats-section-tip">Distribution by day</span>
+                            </div>
+                            <div class="distribution-panel" id="distribution-panel">
+                                <div class="dist-grid" id="dist-grid">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Milestones + Monthly Purity (Combined on Desktop) -->
+                        <div class="stats-section-row">
+                            <!-- Milestones + Records -->
+                            <div class="stats-section">
+                                <div class="stats-section-title">
+                                    <span>Milestones</span>
+                                </div>
+                                <div class="milestone-rings" id="milestone-rings"></div>
+                                <div class="records-board" id="records-board"></div>
+                            </div>
+
+                            <!-- Monthly Purity -->
+                            <div class="stats-section">
+                                <div class="stats-section-title">
+                                    <span>Monthly Purity</span>
+                                </div>
+                                <div class="purity-bars" id="purity-bars"></div>
+                            </div>
+                        </div>
+
+                        <!-- Achievements -->
+                        <div class="stats-section">
+                            <div class="stats-section-title">
+                                <span>Achievements</span>
+                                <span class="stats-section-tip" id="badge-count">0 earned</span>
+                            </div>
+                            <div class="badge-grid" id="badge-grid"></div>
+                        </div>
+
+                        <!-- Insights -->
+                        <div class="stats-section">
+                            <div class="stats-section-title">
+                                <span>Insights</span>
+                            </div>
+                            <div class="insights-card" id="insights-card"></div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="stats-actions">
+                            <button class="text-btn" id="share-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                                Save Poster
+                            </button>
+                            <button class="text-btn text-danger" id="reset-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                </svg>
+                                Clear All
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -138,49 +313,59 @@
             </section>
 
             <footer class="colophon footer-note">
-                <p>All marks are yours alone. Nothing leaves this device. Tap a day to mark it — double-tap to leave a
-                    note in the margin.</p>
+                <div class="footer-row">
+                    <span class="year-progress"><span class="yp-bar"><span class="yp-fill" id="yp-fill"></span></span><span class="yp-text" id="yp-text"></span></span>
+                    <span>Tap to mark · double-tap to note · long-press for urges · right-click for triggers · keyboard: <kbd>t</kbd> today · <kbd>n</kbd> notes · <kbd>s</kbd> stats · <kbd>p</kbd> poster · <kbd>?</kbd> help</span>
+                </div>
             </footer>
         </main>
 
         <!-- Desktop Notes Sidebar / Mobile Notes Overlay -->
-        <aside class="notes-sidebar" id="notes-sidebar">
-            <button class="modal-x" id="notes-x-close" aria-label="Close Notes">&times;</button>
-            <div class="sidebar-header">
-                <h2 class="sidebar-title">Notes</h2>
-                <span class="sidebar-sub">Notes from the record</span>
-            </div>
-
-            <div class="sidebar-tools">
-                <label class="sidebar-search-wrap" for="sidebar-search">
-                    <span class="sidebar-search-label">Search the archive</span>
-                    <input type="search" id="sidebar-search" class="sidebar-search-input"
-                        placeholder="Search notes or #tags">
-                </label>
-                <div class="sidebar-filter-bar">
-                    <button class="sidebar-clear-btn" id="sidebar-clear-filters" type="button">Clear</button>
+        <div class="sidebar-group" id="sidebar-group">
+            <aside class="notes-sidebar" id="notes-sidebar">
+                <button class="modal-x" id="notes-x-close" aria-label="Close Notes">&times;</button>
+                <div class="sidebar-header">
+                    <h2 class="sidebar-title">Notes</h2>
+                    <span class="sidebar-sub">Notes from the record</span>
                 </div>
-                <div class="sidebar-tag-rail" id="sidebar-tag-rail">
+
+                <div class="sidebar-tools">
+                    <label class="sidebar-search-wrap" for="sidebar-search">
+                        <span class="sidebar-search-label">Search the archive</span>
+                        <input type="search" id="sidebar-search" class="sidebar-search-input"
+                            placeholder="Search notes or #tags">
+                    </label>
+                    <div class="sidebar-filter-bar">
+                        <button class="sidebar-clear-btn" id="sidebar-clear-filters" type="button">Clear</button>
+                    </div>
+                    <div class="sidebar-tag-rail" id="sidebar-tag-rail">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <button class="sidebar-fab" id="sidebar-write-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </svg>
+                    <span>Log Today</span>
+                </button>
+
+                <div class="sidebar-notes-list" id="sidebar-notes-list">
                     <!-- Populated by JS -->
                 </div>
-            </div>
-
-            <button class="sidebar-fab" id="sidebar-write-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                <span>Log Today</span>
-            </button>
-
-            <div class="sidebar-notes-list" id="sidebar-notes-list">
-                <!-- Populated by JS -->
-            </div>
-            <div class="sidebar-empty" id="sidebar-empty">
-                <p>No inscriptions yet.</p>
-                <p class="sidebar-hint">Double-click any day to leave a thought.</p>
-            </div>
-        </aside>
+                <div class="sidebar-empty" id="sidebar-empty">
+                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"/>
+                        <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        <circle cx="12" cy="12" r="2" opacity="0.3"/>
+                    </svg>
+                    <p>No inscriptions yet.</p>
+                    <p class="sidebar-hint">Double-tap any day to leave a thought</p>
+                </div>
+            </aside>
+            <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        </div>
     </div>
 
     <!-- Margin Note Modal -->
@@ -230,15 +415,46 @@
             <div class="modal-header">Export Archetype</div>
             <div class="modal-body">
                 <div class="poster-preview-card" id="poster-preview-card">
-                    <div class="preview-mini-header">ARCHIVE 2026</div>
-                    <div class="preview-mini-grid">
-                        <div class="p-dot"></div><div class="p-dot"></div><div class="p-dot"></div>
-                        <div class="p-dot success"></div><div class="p-dot success"></div><div class="p-dot"></div>
-                        <div class="p-dot"></div><div class="p-dot fail"></div><div class="p-dot"></div>
+                    <div class="preview-mini-header">ARCHIVE <span class="preview-year">2026</span></div>
+                    <div class="preview-mini-layout" id="preview-mini-layout">
+                        <div class="p-m-col"><div class="p-m-name">Jan</div><div class="p-m-days"><span class="p-dot"></span><span class="p-dot"></span><span class="p-dot"></span><span class="p-dot success"></span><span class="p-dot success"></span><span class="p-dot"></span><span class="p-dot"></span></div></div>
+                        <div class="p-m-col"><div class="p-m-name">Feb</div><div class="p-m-days"><span class="p-dot"></span><span class="p-dot fail"></span><span class="p-dot"></span><span class="p-dot"></span><span class="p-dot success"></span><span class="p-dot success"></span><span class="p-dot"></span></div></div>
+                        <div class="p-m-col"><div class="p-m-name">Mar</div><div class="p-m-days"><span class="p-dot"></span><span class="p-dot"></span><span class="p-dot success"></span><span class="p-dot success"></span><span class="p-dot success"></span><span class="p-dot"></span><span class="p-dot"></span></div></div>
                     </div>
                     <div class="preview-mini-stats" id="preview-mini-stats">
-                        <div class="p-bar"></div>
-                        <div class="p-bar"></div>
+                        <span class="p-preview-streak">42 DAYS</span>
+                        <span class="p-preview-rate">87%</span>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <span class="config-label">Format</span>
+                    <div class="config-segments" id="config-format-segments">
+                        <button class="segment-btn active" data-value="png">PNG</button>
+                        <button class="segment-btn" data-value="jpeg">JPEG</button>
+                        <button class="segment-btn" data-value="webp">WebP</button>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <span class="config-label">Aspect</span>
+                    <div class="config-segments" id="config-layout-segments">
+                        <button class="segment-btn active" data-value="standard">Standard</button>
+                        <button class="segment-btn" data-value="square">Square</button>
+                        <button class="segment-btn" data-value="story">Story</button>
+                        <button class="segment-btn" data-value="landscape">Wide</button>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <span class="config-label">Archetype</span>
+                    <div class="poster-theme-grid" id="config-theme-segments">
+                        <button class="segment-btn active" data-value="archival">Archival</button>
+                        <button class="segment-btn" data-value="gallery">Gallery</button>
+                        <button class="segment-btn" data-value="solstice">Solstice</button>
+                        <button class="segment-btn" data-value="midnight">Midnight</button>
+                        <button class="segment-btn" data-value="dawn">Dawn</button>
+                        <button class="segment-btn" data-value="noir">Noir</button>
                     </div>
                 </div>
 
@@ -248,28 +464,29 @@
                         <label class="config-toggle-item">
                             <input type="checkbox" id="config-include-stats" checked>
                             <span class="toggle-track"></span>
-                            <span class="toggle-text">Summary Statistics</span>
+                            <span class="toggle-text">Stats</span>
                         </label>
                         <label class="config-toggle-item">
                             <input type="checkbox" id="config-include-notes" checked>
                             <span class="toggle-track"></span>
-                            <span class="toggle-text">Note Indicators</span>
+                            <span class="toggle-text">Notes</span>
                         </label>
                         <label class="config-toggle-item">
                             <input type="checkbox" id="config-include-legend" checked>
                             <span class="toggle-track"></span>
-                            <span class="toggle-text">Color Legend</span>
+                            <span class="toggle-text">Legend</span>
+                        </label>
+                        <label class="config-toggle-item">
+                            <input type="checkbox" id="config-include-urges" checked>
+                            <span class="toggle-track"></span>
+                            <span class="toggle-text">Urge Map</span>
                         </label>
                     </div>
                 </div>
 
                 <div class="config-section">
-                    <span class="config-label">Visual Archetype</span>
-                    <div class="config-segments" id="config-theme-segments">
-                        <button class="segment-btn active" data-value="archival">Archival</button>
-                        <button class="segment-btn" data-value="gallery">Gallery</button>
-                        <button class="segment-btn" data-value="solstice">Solstice</button>
-                    </div>
+                    <span class="config-label">Title (optional)</span>
+                    <input type="text" class="config-input" id="config-title" placeholder="e.g. MY YEAR OF DISCIPLINE" maxlength="50">
                 </div>
             </div>
             <div class="modal-footer">
@@ -298,12 +515,16 @@
                 <h2 class="onboarding-title">MARK YOUR<br>JOURNEY.</h2>
                 <div class="onboarding-feature-grid">
                     <div class="feature-item">
-                        <span class="feature-key">TAP</span>
-                        <span class="feature-desc">Mark a day as Clean or Relapse.</span>
+                        <span class="feature-key">TAP · DRAG</span>
+                        <span class="feature-desc">Mark days Clean or Relapse. Drag across multiple days to batch-mark.</span>
                     </div>
                     <div class="feature-item">
-                        <span class="feature-key">DRAG</span>
-                        <span class="feature-desc">Mark multiple days in a sequence.</span>
+                        <span class="feature-key">AUTO-FILL</span>
+                        <span class="feature-desc">Mark one end of a gap and the app suggests filling the middle.</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-key">LONG-PRESS</span>
+                        <span class="feature-desc">Log an urge with intensity and trigger tags.</span>
                     </div>
                 </div>
                 <div class="onboarding-footer">
@@ -311,28 +532,40 @@
                 </div>
             </div>
 
-            <!-- Slide 3: Margin Notes -->
+            <!-- Slide 3: Margin Notes + Triggers -->
             <div class="onboarding-slide" data-index="2">
                 <div class="onboard-tag">Inscriptions</div>
-                <h2 class="onboarding-title">LEAVE A<br>MARGIN NOTE.</h2>
+                <h2 class="onboarding-title">NOTE &<br>TRACK TRIGGERS.</h2>
                 <div class="onboarding-feature-grid">
                     <div class="feature-item wide">
                         <span class="feature-key">DOUBLE TAP</span>
                         <span class="feature-desc">Open the margin to inscribe your thoughts, tags, or feelings for that
                             specific day.</span>
                     </div>
+                    <div class="feature-item">
+                        <span class="feature-key">ON RELAPSE</span>
+                        <span class="feature-desc">Tag what led to it: Stress, Boredom, Social Media, and more.</span>
+                    </div>
                 </div>
                 <div class="onboarding-footer">
                     <button class="onboarding-next-btn">NEXT &rarr;</button>
                 </div>
             </div>
 
-            <!-- Slide 4: Save Poster -->
+            <!-- Slide 4: Dashboard + Export -->
             <div class="onboarding-slide" data-index="3">
                 <div class="onboard-tag">Record</div>
-                <h2 class="onboarding-title">YOUR LEGACY,<br>EXPORTED.</h2>
-                <p class="onboarding-sub">Generate stunning, high-resolution archival posters of your progress to save
-                    or share.</p>
+                <h2 class="onboarding-title">TRACK, VIEW,<br>EXPORT.</h2>
+                <div class="onboarding-feature-grid">
+                    <div class="feature-item wide">
+                        <span class="feature-key">DASHBOARD</span>
+                        <span class="feature-desc">Streaks, milestones, monthly purity, achievements, pattern insights, and a trend chart — all in one place.</span>
+                    </div>
+                    <div class="feature-item wide">
+                        <span class="feature-key">POSTER</span>
+                        <span class="feature-desc">Generate high-resolution archival posters of your year to save or share.</span>
+                    </div>
+                </div>
                 <div class="onboarding-footer">
                     <button class="onboarding-start-btn" id="onboarding-start-btn">BEGIN RECORDING</button>
                     <button class="onboarding-skip-btn" id="onboarding-skip-btn">Or Skip All</button>
@@ -344,6 +577,149 @@
                 <span class="dot"></span>
                 <span class="dot"></span>
                 <span class="dot"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Urge Log Modal -->
+    <div class="modal-overlay" id="urge-modal">
+        <div class="margin-modal">
+            <button class="modal-x" id="urge-x-close" aria-label="Close Modal">&times;</button>
+            <div class="modal-header">Log Urge</div>
+            <div class="modal-body">
+                <div class="urge-section">
+                    <span class="urge-section-label">Intensity</span>
+                    <div class="intensity-options" id="intensity-options"></div>
+                </div>
+                <div class="urge-section">
+                    <span class="urge-section-label">Tag</span>
+                    <div class="trigger-grid" id="urge-trigger-grid">
+                        <button class="trigger-chip" data-value="stress">Stress</button>
+                        <button class="trigger-chip" data-value="boredom">Boredom</button>
+                        <button class="trigger-chip" data-value="social">Social Media</button>
+                        <button class="trigger-chip" data-value="lonely">Loneliness</button>
+                        <button class="trigger-chip" data-value="late">Late Night</button>
+                        <button class="trigger-chip" data-value="work">Work Pressure</button>
+                        <button class="trigger-chip" data-value="alone">Alone at Home</button>
+                        <button class="trigger-chip" data-value="anxiety">Anxiety</button>
+                        <button class="trigger-chip" data-value="fatigue">Fatigue</button>
+                        <button class="trigger-chip" data-value="anger">Anger</button>
+                        <button class="trigger-chip" data-value="shower">After Shower</button>
+                        <button class="trigger-chip" data-value="waking">Waking Up</button>
+                        <button class="trigger-chip" data-value="habit">Habit Loop</button>
+                        <button class="trigger-chip" data-value="other">Other</button>
+                    </div>
+                </div>
+                <div class="urge-section">
+                    <span class="urge-section-label">Mood</span>
+                    <div class="mood-options" id="mood-options">
+                        <button class="mood-btn" data-mood="great" aria-label="Great">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 3 4 3 4-3 4-3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>
+                        </button>
+                        <button class="mood-btn" data-mood="good" aria-label="Good">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>
+                        </button>
+                        <button class="mood-btn" data-mood="okay" aria-label="Okay">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="8" y1="14" x2="16" y2="14"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>
+                        </button>
+                        <button class="mood-btn" data-mood="low" aria-label="Low">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 16s1.5-2 4-2 4 2 4 2"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>
+                        </button>
+                        <button class="mood-btn" data-mood="awful" aria-label="Awful">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 17s1.5-3 4-3 4 3 4 3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="urge-section">
+                    <span class="urge-section-label">Note</span>
+                    <textarea class="urge-note" id="urge-note" placeholder="Optional note..." rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn primary" id="urge-save-btn">Log</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trigger Tag Modal (appears on fail) -->
+    <div class="modal-overlay" id="trigger-modal">
+        <div class="margin-modal">
+            <button class="modal-x" id="trigger-x-close" aria-label="Close Modal">&times;</button>
+            <div class="modal-header">Tag Relapse</div>
+            <div class="modal-body">
+                <p class="trigger-context" id="trigger-context"></p>
+                <div class="trigger-grid" id="trigger-selection-grid">
+                    <button class="trigger-chip" data-value="stress">Stress</button>
+                    <button class="trigger-chip" data-value="boredom">Boredom</button>
+                    <button class="trigger-chip" data-value="social">Social Media</button>
+                    <button class="trigger-chip" data-value="lonely">Loneliness</button>
+                    <button class="trigger-chip" data-value="late">Late Night</button>
+                    <button class="trigger-chip" data-value="work">Work Pressure</button>
+                    <button class="trigger-chip" data-value="habit">Habit Loop</button>
+                    <button class="trigger-chip" data-value="alone">Alone at Home</button>
+                    <button class="trigger-chip" data-value="anxiety">Anxiety</button>
+                    <button class="trigger-chip" data-value="fatigue">Fatigue</button>
+                    <button class="trigger-chip" data-value="anger">Anger</button>
+                    <button class="trigger-chip" data-value="shower">After Shower</button>
+                    <button class="trigger-chip" data-value="waking">Waking Up</button>
+                    <button class="trigger-chip" data-value="other">Other</button>
+                </div>
+                <div class="encouragement-box" id="encouragement-box">
+                    <span class="encouragement-text" id="encouragement-text"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" id="trigger-skip-btn">Skip</button>
+                <button class="modal-btn primary" id="trigger-confirm-btn">Tag</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trend View Modal -->
+    <div class="modal-overlay" id="trend-modal">
+        <div class="margin-modal trend-modal-content">
+            <button class="modal-x" id="trend-x-close" aria-label="Close Modal">&times;</button>
+            <div class="modal-header">Streak History</div>
+            <div class="modal-body">
+                <canvas id="trend-canvas" width="500" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confetti Canvas Overlay (hidden by default) -->
+    <canvas id="confetti-canvas" class="confetti-overlay"></canvas>
+
+    <!-- Urge Heatmap Modal -->
+    <div class="modal-overlay" id="heatmap-modal">
+        <div class="margin-modal wide-modal">
+            <button class="modal-x" id="heatmap-x-close" aria-label="Close Heatmap">&times;</button>
+            <div class="modal-header">Urge Heatmap</div>
+            <div class="modal-body heatmap-body">
+                <div class="heatmap-key">
+                    <span class="heatmap-key-label">Fewer</span>
+                    <span class="heatmap-key-dot key-0"></span>
+                    <span class="heatmap-key-dot key-1"></span>
+                    <span class="heatmap-key-dot key-2"></span>
+                    <span class="heatmap-key-dot key-3"></span>
+                    <span class="heatmap-key-dot key-4"></span>
+                    <span class="heatmap-key-label">More</span>
+                </div>
+                <canvas id="heatmap-canvas" width="600" height="200"></canvas>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn primary" id="heatmap-close-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pattern Insights Modal -->
+    <div class="modal-overlay" id="insights-modal">
+        <div class="margin-modal">
+            <button class="modal-x" id="insights-x-close" aria-label="Close Insights">&times;</button>
+            <div class="modal-header">Patterns</div>
+            <div class="modal-body insights-body" id="insights-body"></div>
+            <div class="modal-footer">
+                <button class="modal-btn primary" id="insights-close-btn">Close</button>
             </div>
         </div>
     </div>
@@ -372,6 +748,12 @@
             </svg>
             <span>Notes</span>
         </button>
+        <button class="bnav-item" id="bnav-urge" aria-label="Log an Urge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span>Urge</span>
+        </button>
         <button class="bnav-item" id="bnav-top" aria-label="Scroll to Top">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="18 15 12 9 6 15" />
@@ -380,6 +762,7 @@
         </button>
     </nav>
 
+    <div id="toast-container" role="status" aria-live="polite"></div>
     <script src="app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
